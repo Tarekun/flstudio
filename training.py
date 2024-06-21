@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from parameters import *
-from datasets import mnist_train_loader, mnist_test_loader
+from datasets import emnist_train_loader, emnist_test_loader
 
 
 def train(model: nn.Module):
@@ -10,7 +10,7 @@ def train(model: nn.Module):
 
     for epoch in range(num_epochs):
         running_loss = 0.0
-        for images, labels in mnist_train_loader:
+        for images, labels in emnist_train_loader:
             # Zero the parameter gradients
             optimizer.zero_grad()
             
@@ -26,14 +26,14 @@ def train(model: nn.Module):
             
             running_loss += loss.item()
         
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(mnist_train_loader):.4f}')
+        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(emnist_train_loader):.4f}')
 
 
 def evaluate(model: nn.Module):
     correct = 0
     total = 0
     with torch.no_grad():
-        for images, labels in mnist_test_loader:
+        for images, labels in emnist_test_loader:
             images = images.reshape(-1, 28*28).to(device)
             labels = labels.to(device)
             outputs = model(images)
