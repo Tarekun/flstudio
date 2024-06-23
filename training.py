@@ -14,7 +14,9 @@ def train(model: nn.Module):
             # Zero the parameter gradients
             optimizer.zero_grad()
             
-            images = images.reshape(-1, 28*28).to(device)
+            # fatto solo per il linear layer 
+            # images = images.reshape(-1, 28*28).to(device)
+            images = images.to(device)
             labels = labels.to(device)
             # Forward pass
             outputs = model(images)
@@ -34,7 +36,9 @@ def evaluate(model: nn.Module):
     total = 0
     with torch.no_grad():
         for images, labels in emnist_test_loader:
-            images = images.reshape(-1, 28*28).to(device)
+            # fatto solo per il linear layer 
+            # images = images.reshape(-1, 28*28).to(device)
+            images = images.to(device)
             labels = labels.to(device)
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
