@@ -1,7 +1,7 @@
 import h5py
 import torch
 from torchvision import datasets, transforms
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import ConcatDataset, Dataset, DataLoader, random_split
 import numpy as np
 from parameters import batch_size
 
@@ -41,10 +41,8 @@ def split_dataset(dataset, val_ratio=0.1):
     return train_subset, val_subset
 
 
-def get_dataloaders(
+def _get_datasets(
     num_writers: int = 100,
-    # TODO: to be supported
-    test_ratio: float = 0.1,
     val_ratio: float = 0.1,
     only_digits: bool = False,
 ):
@@ -52,19 +50,46 @@ def get_dataloaders(
     dataset_file = "" if only_digits else "write_all.hdf5"
     full_dataset = h5py.File(dataset_file, "r")
     writers = sorted(full_dataset.keys())[:num_writers]
-    train_loaders = []
-    val_loaders = []
+    train_sets = []
+    val_sets = []
 
     for writer in writers:
         images = full_dataset[writer]["images"][:]
         labels = full_dataset[writer]["labels"][:]
-
         dataset = FemnistWriterDataset(images, labels, transform=transform)
-        train_subset, val_subset = split_dataset(dataset, val_ratio)
-        train_loaders.append(
-            DataLoader(train_subset, batch_size=batch_size, shuffle=True)
-        )
-        val_loaders.append(DataLoader(val_subset, batch_size=batch_size, shuffle=False))
 
-    full_dataset.close()
+        train_subset, val_subset = split_dataset(dataset, val_ratio)
+        train_sets.append(train_subset)
+        val_sets.append(val_subset)
+
+    return train_sets, val_sets
+
+
+def get_dataloaders(
+    num_writers: int = 100,
+    # TODO: to be supported
+    test_ratio: float = 0.1,
+    val_ratio: float = 0.1,
+    only_digits: bool = False,
+    hybrid_ratio: float = 0.0,
+):
+    train_sets, val_sets = _get_datasets(num_writers, val_ratio, only_digits)
+    num_centralized = int(hybrid_ratio * num_writers)
+    #
+    if num_centralized > 0:
+        train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
+            num_centralized:
+        ]
+        val_sets = [ConcatDataset(val_sets[:num_centralized])] + val_sets[
+            num_centralized:
+        ]
+
+    train_loaders = [
+        DataLoader(train_set, batch_size=batch_size, shuffle=True)
+        for train_set in train_sets
+    ]
+    val_loaders = [
+        DataLoader(val_set, batch_size=batch_size, shuffle=False)
+        for val_set in val_sets
+    ]
     return train_loaders, val_loaders

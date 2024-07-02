@@ -6,7 +6,9 @@ from data import get_dataloaders
 from client import get_client_generator
 
 
-train_loaders, val_loaders = get_dataloaders(num_writers=writers_to_include)
+train_loaders, val_loaders = get_dataloaders(
+    num_writers=writers_to_include, hybrid_ratio=0.2
+)
 client_fn = get_client_generator(train_loaders, val_loaders)
 
 strategy = FedAvg(
@@ -19,8 +21,8 @@ strategy = FedAvg(
 )
 history = start_simulation(
     client_fn=client_fn,
-    num_clients=writers_to_include,
+    num_clients=len(train_loaders),
     config=fl.server.ServerConfig(num_rounds=num_rounds),
     strategy=strategy,
-    client_resources={"num_cpus": 2, "num_gpus": 0.167},
+    client_resources={"num_cpus": 2, "num_gpus": 0.0},
 )
