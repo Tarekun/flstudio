@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from parameters import *
-from datasets import emnist_train_loader, emnist_val_loader, emnist_test_loader
+from data import emnist_train_loader, emnist_val_loader, emnist_test_loader
 
 def validate(model: nn.Module):
     # Validation step
