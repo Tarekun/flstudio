@@ -19,23 +19,18 @@ class FlowerClient(fl.client.NumPyClient):
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         self.model.load_state_dict(state_dict, strict=True)
 
-    def get_parameters(self, config):
-        self.model.to("cpu")
-        return [val for _, val in self.model.named_parameters()]
+    def get_parameters(self, config={}):
+        return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
 
-    def fit(self, parameters, config):
-        # copy parameters sent by the server into client's local model
+    def fit(self, parameters, config={}):
         self.set_parameters(parameters)
-
-        self.model.to(device)
         train(self.model, self.train_loader)
+        return self.get_parameters(), len(self.train_loader), {}
 
-        return self.get_parameters({}), len(self.train_loader), {}
-
-    def evaluate(self, parameters):
+    def evaluate(self, parameters, config={}):
         self.set_parameters(parameters)
-
-        return evaluate(self.model, self.val_loader)
+        loss, accuracy = evaluate(self.model, self.val_loader)
+        return float(loss), len(self.val_loader), {"accuracy": accuracy}
 
 
 def get_client_generator(train_loaders, val_loaders):

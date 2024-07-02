@@ -42,9 +42,15 @@ def split_dataset(dataset, val_ratio=0.1):
 
 
 def get_dataloaders(
-    num_writers: int = 100, test_ratio: float = 0.1, val_ratio: float = 0.1
+    num_writers: int = 100,
+    # TODO: to be supported
+    test_ratio: float = 0.1,
+    val_ratio: float = 0.1,
+    only_digits: bool = False,
 ):
-    full_dataset = h5py.File("write_all.hdf5", "r")
+    # TODO: include digits dataset file and choose how to properly handle these
+    dataset_file = "" if only_digits else "write_all.hdf5"
+    full_dataset = h5py.File(dataset_file, "r")
     writers = sorted(full_dataset.keys())[:num_writers]
     train_loaders = []
     val_loaders = []
@@ -59,9 +65,6 @@ def get_dataloaders(
             DataLoader(train_subset, batch_size=batch_size, shuffle=True)
         )
         val_loaders.append(DataLoader(val_subset, batch_size=batch_size, shuffle=False))
-        # print(
-        #     f"writer {writer} with {len(train_subset)} training samples and {len(val_subset)} validation samples"
-        # )
 
     full_dataset.close()
     return train_loaders, val_loaders

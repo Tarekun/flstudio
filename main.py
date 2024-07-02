@@ -12,18 +12,17 @@ train_loaders, val_loaders = get_dataloaders(num_writers=writers_to_include)
 client_fn = get_client_generator(train_loaders, val_loaders)
 
 strategy = FedAvg(
-    fraction_fit=0.0,
-    fraction_evaluate=0.0,
+    fraction_fit=1,
+    fraction_evaluate=1,
     # TODO: maybe use this to control the number of clients??
     # min_available_clients=writers_to_include,
     # TODO: evaluate global model
     # evaluate_fn=get_evaluate_fn(cfg.num_classes, testloader),
 )
-history = fl.simulation.start_simulation(
+history = start_simulation(
     client_fn=client_fn,
     num_clients=writers_to_include,
     config=fl.server.ServerConfig(num_rounds=num_rounds),
     strategy=strategy,
     client_resources={"num_cpus": 2, "num_gpus": 0.0},
 )
-print("finished")

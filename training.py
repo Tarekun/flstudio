@@ -30,6 +30,7 @@ def validate(model: nn.Module, val_loader):
 
 def train(model: nn.Module, train_loader, val_loader=None):
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
+    model.to(device)
 
     for epoch in range(num_epochs):
         running_loss = 0.0
@@ -61,6 +62,9 @@ def train(model: nn.Module, train_loader, val_loader=None):
 def evaluate(model: nn.Module, test_loader) -> float:
     correct = 0
     total = 0
+    total_loss = 0.0
+    model.to(device)
+
     with torch.no_grad():
         for images, labels in test_loader:
             # fatto solo per il linear layer
@@ -68,11 +72,12 @@ def evaluate(model: nn.Module, test_loader) -> float:
             images = images.to(device)
             labels = labels.to(device)
             outputs = model(images)
+
+            total_loss += criterion(outputs, labels)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    print(
-        f"Accuracy of the network on the 10000 test images: {100 * correct / total} %"
-    )
-    return correct / total
+    accuracy = correct / total
+    print(f"Accuracy of the network on the 10000 test images: {100 * accuracy} %")
+    return total_loss, accuracy
