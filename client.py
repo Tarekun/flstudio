@@ -33,12 +33,12 @@ class FlowerClient(fl.client.NumPyClient):
         return float(loss), len(self.val_loader), {"accuracy": accuracy}
 
 
-def get_client_generator(train_loaders, val_loaders):
+def get_client_generator(train_loaders, val_loaders, num_classes):
     def client_generator(cid: str):
         return FlowerClient(
             train_loader=train_loaders[int(cid)],
             val_loader=val_loaders[int(cid)],
-            model=CnnEmnist(),
+            model=CnnEmnist(num_classes),
         ).to_client()
 
     return client_generator

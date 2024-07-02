@@ -35,6 +35,7 @@ class FemnistWriterDataset(Dataset):
 
 
 def split_dataset(dataset, val_ratio=0.1):
+    """Splits the training dataset into training subset and validation subset"""
     val_size = int(val_ratio * len(dataset))
     train_size = len(dataset) - val_size
     train_subset, val_subset = random_split(dataset, [train_size, val_size])
@@ -46,6 +47,8 @@ def _get_datasets(
     val_ratio: float = 0.1,
     only_digits: bool = False,
 ):
+    """Retrieves the FEMNIST dataset at the HDF5 file"""
+
     # TODO: include digits dataset file and choose how to properly handle these
     dataset_file = "" if only_digits else "write_all.hdf5"
     full_dataset = h5py.File(dataset_file, "r")
@@ -73,6 +76,8 @@ def get_dataloaders(
     only_digits: bool = False,
     hybrid_ratio: float = 0.0,
 ):
+    """Instatiates and returns the DataLoaders for the FEMNIST dataset partitioned by user"""
+
     train_sets, val_sets = _get_datasets(num_writers, val_ratio, only_digits)
     num_centralized = int(hybrid_ratio * num_writers)
     #

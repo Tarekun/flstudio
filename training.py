@@ -35,14 +35,11 @@ def train(model: nn.Module, train_loader, val_loader=None):
     for epoch in range(num_epochs):
         running_loss = 0.0
         for images, labels in train_loader:
-            # Zero the parameter gradients
-            optimizer.zero_grad()
-
-            # fatto solo per il linear layer
-            # images = images.reshape(-1, 28*28).to(device)
             images = images.to(device)
             labels = labels.to(device)
+
             # Forward pass
+            optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
 
@@ -67,8 +64,6 @@ def evaluate(model: nn.Module, test_loader) -> float:
 
     with torch.no_grad():
         for images, labels in test_loader:
-            # fatto solo per il linear layer
-            # images = images.reshape(-1, 28*28).to(device)
             images = images.to(device)
             labels = labels.to(device)
             outputs = model(images)

@@ -5,11 +5,13 @@ from parameters import writers_to_include, num_rounds
 from data import get_dataloaders
 from client import get_client_generator
 
+only_digits = False
+num_classes = 10 if only_digits else 62
 
 train_loaders, val_loaders = get_dataloaders(
-    num_writers=writers_to_include, hybrid_ratio=0.2
+    num_writers=writers_to_include, hybrid_ratio=0.2, only_digits=only_digits
 )
-client_fn = get_client_generator(train_loaders, val_loaders)
+client_fn = get_client_generator(train_loaders, val_loaders, num_classes)
 
 strategy = FedAvg(
     fraction_fit=1,
