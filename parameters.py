@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+writers_to_include = 2
+num_rounds = 10
 
 
 # hyper parameters

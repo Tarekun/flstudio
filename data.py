@@ -59,9 +59,9 @@ def get_dataloaders(
             DataLoader(train_subset, batch_size=batch_size, shuffle=True)
         )
         val_loaders.append(DataLoader(val_subset, batch_size=batch_size, shuffle=False))
-        print(
-            f"writer {writer} with {len(train_subset)} training samples and {len(val_subset)} validation samples"
-        )
+        # print(
+        #     f"writer {writer} with {len(train_subset)} training samples and {len(val_subset)} validation samples"
+        # )
 
     full_dataset.close()
     return train_loaders, val_loaders
