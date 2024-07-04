@@ -7,6 +7,7 @@ from flwr.simulation import start_simulation
 from data import get_dataloaders
 from client import get_client_generator
 from training import get_evaluation_fn
+from visualization import plot_simulation
 
 
 @hydra.main(config_path="conf", config_name="digits")
@@ -30,6 +31,7 @@ def main(cfg: DictConfig):
         strategy=strategy,
         client_resources={"num_cpus": sim_cfg.num_cpus, "num_gpus": sim_cfg.num_gpus},
     )
+    plot_simulation(history)
 
 
 if __name__ == "__main__":

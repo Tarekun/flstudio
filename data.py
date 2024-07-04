@@ -56,7 +56,7 @@ def _get_datasets(
     """Retrieves the FEMNIST dataset at the HDF5 file"""
 
     # TODO: include digits dataset file and choose how to properly handle these
-    dataset_file = "" if only_digits else "write_all.hdf5"
+    dataset_file = "write_digits.hdf5" if only_digits else "write_all.hdf5"
     full_dataset = h5py.File(dataset_file, "r")
     writers = sorted(full_dataset.keys())[:num_writers]
     train_sets = []
