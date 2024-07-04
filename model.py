@@ -8,7 +8,7 @@ linears = [512, 256, 62]
 
 
 class CnnEmnist(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes: int):
         super(CnnEmnist, self).__init__()
         # reused pooling layer
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)

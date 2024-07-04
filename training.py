@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from omegaconf import DictConfig
+from model import CnnEmnist
+from collections import OrderedDict
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -63,10 +65,12 @@ def train(model: nn.Module, train_loader, train_cfg: DictConfig, val_loader=None
             validate(model, val_loader)
 
 
-def evaluate(model: nn.Module, test_loader) -> float:
+def evaluate_model(model: nn.Module, test_loader) -> float:
     correct = 0
     total = 0
     total_loss = 0.0
+    # Put the model in evaluation mode ??
+    model.eval()
     model.to(device)
 
     with torch.no_grad():
@@ -83,3 +87,16 @@ def evaluate(model: nn.Module, test_loader) -> float:
     accuracy = correct / total
     print(f"Accuracy of the network on the 10000 test images: {100 * accuracy} %")
     return total_loss, accuracy
+
+
+def get_evaluation_fn(num_classes: int, test_loader):
+    def evaluation_fn(server_round, parameters, config):
+        model = CnnEmnist(num_classes)
+        params_dict = zip(model.state_dict().keys(), parameters)
+        state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+        model.load_state_dict(state_dict, strict=True)
+
+        loss, accuracy = evaluate_model(model, test_loader)
+        return loss, {"accuracy": accuracy, "loss": loss}
+
+    return evaluation_fn

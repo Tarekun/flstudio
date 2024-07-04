@@ -34,17 +34,23 @@ class FemnistWriterDataset(Dataset):
         return len(self.y)
 
 
-def split_dataset(dataset, val_ratio=0.1):
+def split_dataset(dataset, val_ratio: float, test_ratio: float):
     """Splits the training dataset into training subset and validation subset"""
-    val_size = int(val_ratio * len(dataset))
-    train_size = len(dataset) - val_size
-    train_subset, val_subset = random_split(dataset, [train_size, val_size])
-    return train_subset, val_subset
+    tot_size = len(dataset)
+    val_size = int(val_ratio * tot_size)
+    test_size = int(test_ratio * tot_size)
+    train_size = tot_size - val_size - test_size
+
+    train_subset, val_subset, test_subset = random_split(
+        dataset, [train_size, val_size, test_size]
+    )
+    return train_subset, val_subset, test_subset
 
 
 def _get_datasets(
-    num_writers: int = 100,
-    val_ratio: float = 0.1,
+    num_writers: int,
+    val_ratio: float,
+    test_ratio: float,
     only_digits: bool = False,
 ):
     """Retrieves the FEMNIST dataset at the HDF5 file"""
@@ -55,17 +61,21 @@ def _get_datasets(
     writers = sorted(full_dataset.keys())[:num_writers]
     train_sets = []
     val_sets = []
+    test_sets = []
 
     for writer in writers:
         images = full_dataset[writer]["images"][:]
         labels = full_dataset[writer]["labels"][:]
         dataset = FemnistWriterDataset(images, labels, transform=transform)
 
-        train_subset, val_subset = split_dataset(dataset, val_ratio)
+        train_subset, val_subset, test_subset = split_dataset(
+            dataset, val_ratio, test_ratio
+        )
         train_sets.append(train_subset)
         val_sets.append(val_subset)
+        test_sets.append(test_subset)
 
-    return train_sets, val_sets
+    return train_sets, val_sets, test_sets
 
 
 def get_dataloaders(
@@ -73,8 +83,11 @@ def get_dataloaders(
 ):
     """Instatiates and returns the DataLoaders for the FEMNIST dataset partitioned by user"""
 
-    train_sets, val_sets = _get_datasets(
-        data_cfg.num_writers, data_cfg.val_ratio, data_cfg.only_digits
+    train_sets, val_sets, test_sets = _get_datasets(
+        data_cfg.num_writers,
+        data_cfg.val_ratio,
+        data_cfg.test_ratio,
+        data_cfg.only_digits,
     )
     num_centralized = int(data_cfg.hybrid_ratio * data_cfg.num_writers)
     #
@@ -94,4 +107,10 @@ def get_dataloaders(
         DataLoader(val_set, batch_size=data_cfg.batch_size, shuffle=False)
         for val_set in val_sets
     ]
-    return train_loaders, val_loaders
+
+    # collapse the test datasets into one to test the global model
+    combined_test_dataset = ConcatDataset(test_sets)
+    test_loader = DataLoader(
+        combined_test_dataset, batch_size=data_cfg.batch_size, shuffle=False
+    )
+    return train_loaders, val_loaders, test_loader

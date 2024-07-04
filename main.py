@@ -6,6 +6,7 @@ from flwr.simulation import start_simulation
 
 from data import get_dataloaders
 from client import get_client_generator
+from training import get_evaluation_fn
 
 
 @hydra.main(config_path="conf", config_name="digits")
@@ -13,16 +14,14 @@ def main(cfg: DictConfig):
     sim_cfg, train_cfg, data_cfg = cfg.sim_cfg, cfg.train_cfg, cfg.data_cfg
     num_classes = 10 if data_cfg.only_digits else 62
 
-    train_loaders, val_loaders = get_dataloaders(data_cfg)
+    train_loaders, val_loaders, test_loader = get_dataloaders(data_cfg)
     client_fn = get_client_generator(train_loaders, val_loaders, num_classes, train_cfg)
+    evaluate_fn = get_evaluation_fn(num_classes, test_loader)
 
     strategy = FedAvg(
         fraction_fit=1,
         fraction_evaluate=0,
-        # TODO: maybe use this to control the number of clients??
-        # min_available_clients=writers_to_include,
-        # TODO: evaluate global model
-        # evaluate_fn=get_evaluate_fn(cfg.num_classes, testloader),
+        evaluate_fn=evaluate_fn,
     )
     history = start_simulation(
         client_fn=client_fn,

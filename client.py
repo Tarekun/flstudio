@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import flwr as fl
 import torch
-from training import train, evaluate
+from training import train, evaluate_model
 from model import CnnEmnist
 from omegaconf import DictConfig
 
@@ -30,7 +30,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def evaluate(self, parameters, config={}):
         self.set_parameters(parameters)
-        loss, accuracy = evaluate(self.model, self.val_loader)
+        loss, accuracy = evaluate_model(self.model, self.val_loader)
         return float(loss), len(self.val_loader), {"accuracy": accuracy}
 
 
