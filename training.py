@@ -1,7 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from parameters import *
+from omegaconf import DictConfig
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
+criterion = nn.CrossEntropyLoss()
 
 
 def validate(model: nn.Module, val_loader):
@@ -28,11 +33,13 @@ def validate(model: nn.Module, val_loader):
     print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%")
 
 
-def train(model: nn.Module, train_loader, val_loader=None):
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
+def train(model: nn.Module, train_loader, train_cfg: DictConfig, val_loader=None):
+    optimizer = optim.SGD(
+        model.parameters(), lr=train_cfg.lr, momentum=train_cfg.momentum
+    )
     model.to(device)
 
-    for epoch in range(num_epochs):
+    for epoch in range(train_cfg.epochs):
         running_loss = 0.0
         for images, labels in train_loader:
             images = images.to(device)
@@ -50,7 +57,7 @@ def train(model: nn.Module, train_loader, val_loader=None):
             running_loss += loss.item()
 
         print(
-            f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(train_loader):.4f}"
+            f"Epoch [{epoch+1}/{train_cfg.epochs}], Loss: {running_loss/len(train_loader):.4f}"
         )
         if val_loader:
             validate(model, val_loader)

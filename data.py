@@ -3,7 +3,7 @@ import torch
 from torchvision import datasets, transforms
 from torch.utils.data import ConcatDataset, Dataset, DataLoader, random_split
 import numpy as np
-from parameters import batch_size
+from omegaconf import DictConfig
 
 transform = transforms.Compose(
     [
@@ -69,17 +69,14 @@ def _get_datasets(
 
 
 def get_dataloaders(
-    num_writers: int = 100,
-    # TODO: to be supported
-    test_ratio: float = 0.1,
-    val_ratio: float = 0.1,
-    only_digits: bool = False,
-    hybrid_ratio: float = 0.0,
+    data_cfg: DictConfig,
 ):
     """Instatiates and returns the DataLoaders for the FEMNIST dataset partitioned by user"""
 
-    train_sets, val_sets = _get_datasets(num_writers, val_ratio, only_digits)
-    num_centralized = int(hybrid_ratio * num_writers)
+    train_sets, val_sets = _get_datasets(
+        data_cfg.num_writers, data_cfg.val_ratio, data_cfg.only_digits
+    )
+    num_centralized = int(data_cfg.hybrid_ratio * data_cfg.num_writers)
     #
     if num_centralized > 0:
         train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
@@ -90,11 +87,11 @@ def get_dataloaders(
         ]
 
     train_loaders = [
-        DataLoader(train_set, batch_size=batch_size, shuffle=True)
+        DataLoader(train_set, batch_size=data_cfg.batch_size, shuffle=True)
         for train_set in train_sets
     ]
     val_loaders = [
-        DataLoader(val_set, batch_size=batch_size, shuffle=False)
+        DataLoader(val_set, batch_size=data_cfg.batch_size, shuffle=False)
         for val_set in val_sets
     ]
     return train_loaders, val_loaders
