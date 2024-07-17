@@ -32,5 +32,9 @@ def plot_simulation(history):
 
     create_plot("loss_per_round.png", x=rounds, y=losses, title="Loss per round")
     create_plot(
-        "accuracy_per_round.png", x=rounds, y=accuracies, title="Accuracy per round"
+        "accuracy_per_round.png",
+        x=rounds,
+        y=accuracies,
+        title="Accuracy per round",
+        ylabel=f"last: {round(accuracies[len(accuracies)-1], 2)}%",
     )
