@@ -17,7 +17,6 @@ def create_plot(filename: str, x, y, title="", ylabel=""):
     # plt.xlabel("Round")
     plt.ylabel(ylabel)
     plt.grid(True)
-    plt.xticks(range(0, len(x)))
     plt.savefig(os.path.join(PLOTS_DIR, filename))
     plt.close()
 
