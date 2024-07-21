@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from omegaconf import DictConfig
-from model import CnnEmnist
+from model import CnnEmnist, HarModel
 from collections import OrderedDict
 
 
@@ -82,16 +82,19 @@ def evaluate_model(model: nn.Module, test_loader) -> float:
             total_loss += criterion(outputs, labels)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+
+            labels_indices = torch.argmax(labels, dim=1)
+            correct += (predicted == labels_indices).sum().item()
 
     accuracy = correct / total
-    print(f"Accuracy of the network on the 10000 test images: {100 * accuracy} %")
+    print(f"Evaluation accuracy on the test dataset: {100 * accuracy:.2f}%")
     return total_loss, accuracy
 
 
 def get_evaluation_fn(num_classes: int, test_loader):
     def evaluation_fn(server_round, parameters, config):
-        model = CnnEmnist(num_classes)
+        # model = CnnEmnist(num_classes)
+        model = HarModel(num_classes)
         params_dict = zip(model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         model.load_state_dict(state_dict, strict=True)

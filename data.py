@@ -47,18 +47,16 @@ class HarDataset(Dataset):
         labels = []
         with open(filename, "r") as file:
             for line in file:
-                label = int(line.strip())
-                print(label)
-                one_hot = torch.zeros(6, dtype=torch.int64)
+                label = int(line)
+                one_hot = torch.zeros(6, dtype=torch.float32)
                 one_hot[label - 1] = label
-                print(one_hot, end="\n\n")
                 labels.append(one_hot)
         return labels
 
     def __init__(self, train=True, transform=None):
         variant = "train" if train else "test"
         self.x = HarDataset.__load_x__(f"data/X_{variant}.txt")
-        self.y = HarDataset.__load_x__(f"data/y_{variant}.txt")
+        self.y = HarDataset.__load_y__(f"data/y_{variant}.txt")
         self.transform = transform
 
         if len(self.x) != len(self.y):
@@ -69,8 +67,8 @@ class HarDataset(Dataset):
     def __getitem__(self, index):
         target_data = self.y[index]
         input_data = self.x[index]
-        if self.transform:
-            input_data = self.transform(input_data)
+        # if self.transform:
+        #     input_data = self.transform(input_data)
 
         return input_data, target_data
 
