@@ -15,8 +15,8 @@ def main(cfg: DictConfig):
     sim_cfg, train_cfg, data_cfg = cfg.sim_cfg, cfg.train_cfg, cfg.data_cfg
     num_classes = data_cfg.num_classes
 
-    train_loaders, val_loaders, test_loader = get_dataloaders(data_cfg)
-    client_fn = get_client_generator(train_loaders, val_loaders, num_classes, train_cfg)
+    train_loaders, _, test_loader = get_dataloaders(data_cfg)
+    client_fn = get_client_generator(train_loaders, num_classes, train_cfg)
     evaluate_fn = get_evaluation_fn(num_classes, test_loader)
 
     strategy = FedAvg(

@@ -2,17 +2,17 @@ defaults:
   - _self_
 
 sim_cfg:
-  num_rounds: 10
+  num_rounds: 20
   num_cpus: 2
   num_gpus: 0.0
 
 train_cfg:
-  epochs: 10
+  epochs: 5
   lr: 0.01
   momentum: 0.9
 
 data_cfg:
-  num_clients: 9
+  num_clients: 30
   hybrid_ratio: 0.0
   batch_size: 32
   dataset: har

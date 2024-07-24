@@ -163,14 +163,11 @@ def get_dataloaders(
 ) -> tuple[list[DataLoader], list[DataLoader], DataLoader]:
     """Instatiates and returns the DataLoaders for the FEMNIST dataset partitioned by user"""
 
-    train_sets, val_sets, test_sets = _get_datasets(data_cfg)
+    train_sets, _, test_sets = _get_datasets(data_cfg)
     num_centralized = int(data_cfg.hybrid_ratio * data_cfg.num_clients)
     #
     if num_centralized > 0:
         train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
-            num_centralized:
-        ]
-        val_sets = [ConcatDataset(val_sets[:num_centralized])] + val_sets[
             num_centralized:
         ]
 
@@ -178,14 +175,10 @@ def get_dataloaders(
         DataLoader(train_set, batch_size=data_cfg.batch_size, shuffle=True)
         for train_set in train_sets
     ]
-    val_loaders = [
-        DataLoader(val_set, batch_size=data_cfg.batch_size, shuffle=False)
-        for val_set in val_sets
-    ]
 
     # collapse the test datasets into one to test the global model
     combined_test_dataset = ConcatDataset(test_sets)
     test_loader = DataLoader(
         combined_test_dataset, batch_size=data_cfg.batch_size, shuffle=False
     )
-    return train_loaders, val_loaders, test_loader
+    return train_loaders, test_loader
