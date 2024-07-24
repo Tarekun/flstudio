@@ -145,6 +145,7 @@ def _get_femnist_datasets(
         val_sets.append(val_subset)
         test_sets.append(test_subset)
 
+    full_dataset.close()
     return train_sets, val_sets, test_sets
 
 
@@ -159,13 +160,7 @@ def _get_har_datasets(
         train_sizes = [train_size // num_clients] * num_clients
         train_sizes[0] += len(full_trainset) % num_clients
 
-        train_splits = random_split(full_trainset, train_sizes)
-        return train_splits
-
-    def partition_vertically():
-        train_splits = random_split(
-            full_trainset,
-        )
+        return random_split(full_trainset, train_sizes)
 
     train_splits = partition_horizontally()
     # this dataset is already split into 70% train and 30% test, no validation used
@@ -214,3 +209,16 @@ def get_dataloaders(
     # collapse the test datasets into one to test the global model
     test_loader = DataLoader(test_set, batch_size=data_cfg.batch_size, shuffle=False)
     return train_loaders, test_loader
+
+
+def get_vertical_dataloaders(data_cfg: DictConfig) -> tuple[DataLoader, DataLoader]:
+    train_set = HarDataset(train=True)
+    test_set = HarDataset(train=False)
+
+    # process the whole training set in one batch as the output of local models
+    # will be an embedding used as input for the server model, which will be the one
+    # compute the gradient's for both local and global model
+    # test set is still processed with configured batch size (should I change this??)
+    return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
+        test_set, batch_size=data_cfg.batch_size, shuffle=False
+    )
