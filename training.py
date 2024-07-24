@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from omegaconf import DictConfig
-from model import get_proper_model
+from models import get_proper_model
 from collections import OrderedDict
 
 

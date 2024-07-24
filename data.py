@@ -159,13 +159,7 @@ def _get_har_datasets(
         train_sizes = [train_size // num_clients] * num_clients
         train_sizes[0] += len(full_trainset) % num_clients
 
-        train_splits = random_split(full_trainset, train_sizes)
-        return train_splits
-
-    def partition_vertically():
-        train_splits = random_split(
-            full_trainset,
-        )
+        return random_split(full_trainset, train_sizes)
 
     train_splits = partition_horizontally()
     # this dataset is already split into 70% train and 30% test, no validation used
