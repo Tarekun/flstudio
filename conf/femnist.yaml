@@ -1,0 +1,27 @@
+defaults:
+  - _self_
+
+sim_cfg:
+  num_rounds: 15
+  num_cpus: 2
+  num_gpus: 0.0
+
+train_cfg:
+  epochs: 1
+  lr: 0.01
+  momentum: 0.9
+
+data_cfg:
+  num_clients: 750
+  hybrid_ratio: 0.05
+  batch_size: 32
+  val_ratio: 0.0
+  test_ratio: 0.1
+  dataset: femnist
+  # warning: these values must always be changed together
+  only_digits: false
+  num_classes: 62
+
+hydra:
+  run:
+    dir: .

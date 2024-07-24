@@ -51,3 +51,27 @@ class CnnEmnist(nn.Module):
         # final layer uses softmax as this is a classification problem
         out = F.log_softmax(self.fc3(x), dim=1)
         return out
+
+
+class HarModel(nn.Module):
+    def __init__(self, num_classes: int):
+        super(HarModel, self).__init__()
+        self.fc1 = nn.Linear(561, 50)
+        self.fc4 = nn.Linear(50, num_classes)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+
+        out = F.log_softmax(self.fc4(x), dim=1)
+        return out
+
+
+def get_proper_model(num_classes: int, dataset: str):
+    if dataset == "femnist":
+        return CnnEmnist(num_classes)
+    elif dataset == "har":
+        return HarModel(num_classes)
+    else:
+        raise ValueError(
+            f"dataset {dataset} not supported, 'femnist' and 'har' are the only possible values"
+        )
