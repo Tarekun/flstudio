@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from omegaconf import DictConfig
-from model import CnnEmnist, HarModel
+from model import get_proper_model
 from collections import OrderedDict
 
 
@@ -91,10 +91,9 @@ def evaluate_model(model: nn.Module, test_loader) -> float:
     return total_loss, accuracy
 
 
-def get_evaluation_fn(num_classes: int, test_loader):
+def get_evaluation_fn(num_classes: int, dataset: str, test_loader):
     def evaluation_fn(server_round, parameters, config):
-        # model = CnnEmnist(num_classes)
-        model = HarModel(num_classes)
+        model = get_proper_model(num_classes, dataset)
         params_dict = zip(model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         model.load_state_dict(state_dict, strict=True)

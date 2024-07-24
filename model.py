@@ -64,3 +64,14 @@ class HarModel(nn.Module):
 
         out = F.log_softmax(self.fc4(x), dim=1)
         return out
+
+
+def get_proper_model(num_classes: int, dataset: str):
+    if dataset == "femnist":
+        return CnnEmnist(num_classes)
+    elif dataset == "har":
+        return HarModel(num_classes)
+    else:
+        raise ValueError(
+            f"dataset {dataset} not supported, 'femnist' and 'har' are the only possible values"
+        )

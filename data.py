@@ -67,8 +67,8 @@ class HarDataset(Dataset):
     def __getitem__(self, index):
         target_data = self.y[index]
         input_data = self.x[index]
-        # if self.transform:
-        #     input_data = self.transform(input_data)
+        if self.transform:
+            input_data = self.transform(input_data)
 
         return input_data, target_data
 
@@ -123,8 +123,8 @@ def _get_femnist_datasets(
 def _get_har_datasets(
     num_clients: int,
 ) -> tuple[list[Dataset], list[Dataset], list[Dataset]]:
-    full_trainset = HarDataset(train=True, transform=transform)
-    full_testset = HarDataset(train=False, transform=transform)
+    full_trainset = HarDataset(train=True)
+    full_testset = HarDataset(train=False)
 
     train_size, test_size = len(full_trainset), len(full_testset)
     train_sizes = [train_size // num_clients] * num_clients
@@ -160,7 +160,7 @@ def _get_datasets(
 
 def get_dataloaders(
     data_cfg: DictConfig,
-) -> tuple[list[DataLoader], list[DataLoader], DataLoader]:
+) -> tuple[list[DataLoader], DataLoader]:
     """Instatiates and returns the DataLoaders for the FEMNIST dataset partitioned by user"""
 
     train_sets, _, test_sets = _get_datasets(data_cfg)
