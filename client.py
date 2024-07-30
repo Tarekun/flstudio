@@ -2,7 +2,7 @@ from collections import OrderedDict
 import flwr as fl
 import torch
 from training import train, evaluate_model
-from models import get_proper_model
+from models import *
 from omegaconf import DictConfig
 
 
@@ -36,7 +36,7 @@ class VerticalClient(fl.client.NumPyClient):
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01)
 
     def get_parameters(self, config):
-        pass
+        return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
 
     def fit(self, parameters, config):
         """In a vertical setting the 'fit' method is used to compute the latent vector representation
@@ -69,9 +69,7 @@ def get_client_generator(
 
 
 def get_vertical_client_generator(train_cfg: DictConfig, train_loader):
-    from models import ClientVerticalModel
-
-    num_features = 0
+    num_features = 561
 
     def client_generator(cid: str):
         return VerticalClient(

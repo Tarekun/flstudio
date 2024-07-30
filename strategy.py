@@ -10,7 +10,7 @@ from models import ServerVerticalModel
 def parameters_to_embeddings(results):
     embedding_results = [
         torch.from_numpy(parameters_to_ndarrays(fit_result.parameters)[0])
-        for _, fit_result in results
+        for _, fit_result in results[0:1]
     ]
     embeddings_aggregated = torch.cat(embedding_results, dim=1)
     server_embedding = embeddings_aggregated.detach().requires_grad_()
@@ -58,7 +58,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             fit_metrics_aggregation_fn=fit_metrics_aggregation_fn,
             evaluate_metrics_aggregation_fn=evaluate_metrics_aggregation_fn,
         )
-        self.model = ServerVerticalModel(12, 12)
+        self.model = ServerVerticalModel(1, 6)
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
         self.criterion = nn.BCELoss()
         # self.label = torch.tensor(labels).float().unsqueeze(1)

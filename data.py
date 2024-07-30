@@ -145,6 +145,7 @@ def _get_femnist_datasets(
         val_sets.append(val_subset)
         test_sets.append(test_subset)
 
+    full_dataset.close()
     return train_sets, val_sets, test_sets
 
 
@@ -208,3 +209,11 @@ def get_dataloaders(
     # collapse the test datasets into one to test the global model
     test_loader = DataLoader(test_set, batch_size=data_cfg.batch_size, shuffle=False)
     return train_loaders, test_loader
+
+
+def get_unpartitioned_dataset(data_cfg: DictConfig):
+    train_set = HarDataset(train=True)
+    test_set = HarDataset(train=False)
+    return DataLoader(
+        train_set, batch_size=data_cfg.batch_size, shuffle=True
+    ), DataLoader(test_set, batch_size=data_cfg.batch_size, shuffle=False)

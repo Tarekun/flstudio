@@ -83,7 +83,8 @@ class ClientVerticalModel(nn.Module):
 class ServerVerticalModel(nn.Module):
     def __init__(self, num_clients, num_classes: int):
         super(ServerVerticalModel, self).__init__()
-        self.input = nn.Linear(num_clients * latent_vector_length, 100)
+        self.input = nn.Linear(latent_vector_length, 100)
+        # self.input = nn.Linear(num_clients * latent_vector_length, 100)
         self.output = nn.Linear(100, num_classes)
 
     def forward(self, x):
