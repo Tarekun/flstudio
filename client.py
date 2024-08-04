@@ -4,6 +4,7 @@ import torch
 from training import train, evaluate_model, device
 from models import *
 from omegaconf import DictConfig
+from data import extract_features
 
 
 class HorizontalClient(fl.client.NumPyClient):
@@ -33,10 +34,11 @@ class VerticalClient(fl.client.NumPyClient):
         cid: int,
         total_features: int,
         num_clients: int,
+        model,
         train_loader,
         train_cfg,
     ):
-        self.model = ClientVerticalModel(total_features // num_clients)
+        self.model = model
         self.cid = cid
         self.num_clients = num_clients
         self.total_features = total_features
@@ -46,20 +48,14 @@ class VerticalClient(fl.client.NumPyClient):
         self.embedding = None
         self.forward_pass()
 
-    def _extract_features(self, features):
-        """Gets only the features of this specific client"""
-        features_per_client = self.total_features // self.num_clients
-        start_idx = self.cid * features_per_client
-        end_idx = start_idx + features_per_client
-
-        return features[:, start_idx:end_idx]
-
     def forward_pass(self):
         """Performs a forward pass through the whole train_loader and saves the result in self.embedding"""
         # assuming the dataloader has a batch size of the entire dataset
         for batch in self.train_loader:
             features, _ = batch  # ignoring labels
-            extracted_features = self._extract_features(features.to(device))
+            extracted_features = extract_features(
+                features.to(device), self.num_clients, self.cid
+            )
             self.embedding = self.model(extracted_features)
 
     def get_parameters(self, config):
@@ -95,13 +91,14 @@ def get_horizontal_client_generator(
 
 
 def get_vertical_client_generator(
-    train_cfg: DictConfig, num_clients: int, train_loader
+    train_cfg: DictConfig, num_clients: int, client_models, train_loader
 ):
     def client_generator(cid: str):
         return VerticalClient(
             int(cid),
             561,  # TODO: find a better way of setting this
             num_clients,
+            client_models[int(cid)],
             train_loader,
             train_cfg,
         ).to_client()

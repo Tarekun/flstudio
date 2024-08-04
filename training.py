@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from omegaconf import DictConfig
-from models import get_proper_model
+from models import get_proper_model, FullVerticalModel
 from collections import OrderedDict
 
 
@@ -83,16 +83,17 @@ def evaluate_model(model: nn.Module, test_loader) -> float:
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
 
-            # labels_indices = torch.argmax(labels, dim=1)
-            # correct += (predicted == labels_indices).sum().item()
-            correct += (predicted == labels).sum().item()
+            # TODO: label encoding still causes problems here
+            labels_indices = torch.argmax(labels, dim=1)
+            correct += (predicted == labels_indices).sum().item()
+            # correct += (predicted == labels).sum().item()
 
     accuracy = correct / total
     print(f"Evaluation accuracy on the test dataset: {100 * accuracy:.2f}%")
     return total_loss, accuracy
 
 
-def get_evaluation_fn(num_classes: int, dataset: str, test_loader):
+def get_horizontal_evaluation_fn(num_classes: int, dataset: str, test_loader):
     def evaluation_fn(server_round, parameters, config):
         model = get_proper_model(num_classes, dataset)
         params_dict = zip(model.state_dict().keys(), parameters)
@@ -100,6 +101,23 @@ def get_evaluation_fn(num_classes: int, dataset: str, test_loader):
         model.load_state_dict(state_dict, strict=True)
 
         loss, accuracy = evaluate_model(model, test_loader)
+        return loss, {"accuracy": accuracy, "loss": loss}
+
+    return evaluation_fn
+
+
+def get_vertical_evaluation_fn(
+    client_models: list[nn.Module],
+    server_model: nn.Module,
+    num_clients: int,
+    test_loader,
+):
+    def evaluation_fn(server_round, parameters, config):
+        print(
+            "#####################################################################################"
+        )
+        full_model = FullVerticalModel(client_models, server_model, num_clients)
+        loss, accuracy = evaluate_model(full_model, test_loader)
         return loss, {"accuracy": accuracy, "loss": loss}
 
     return evaluation_fn

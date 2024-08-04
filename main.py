@@ -6,9 +6,10 @@ from flwr.simulation import start_simulation
 
 from data import get_horizontal_dataloaders, get_vertical_dataloaders
 from client import get_horizontal_client_generator, get_vertical_client_generator
-from training import get_evaluation_fn
+from training import get_horizontal_evaluation_fn, get_vertical_evaluation_fn
 from visualization import plot_simulation
 from strategy import *
+from models import *
 
 
 def horizontal_simulation(cfg: DictConfig):
@@ -19,7 +20,9 @@ def horizontal_simulation(cfg: DictConfig):
     client_fn = get_horizontal_client_generator(
         num_classes, data_cfg.dataset, train_cfg, train_loaders
     )
-    evaluate_fn = get_evaluation_fn(num_classes, data_cfg.dataset, test_loader)
+    evaluate_fn = get_horizontal_evaluation_fn(
+        num_classes, data_cfg.dataset, test_loader
+    )
 
     strategy = FedAvg(
         fraction_fit=1,
@@ -42,14 +45,32 @@ def vertical_simulation(cfg: DictConfig):
     sim_cfg, train_cfg, data_cfg = cfg.sim_cfg, cfg.train_cfg, cfg.data_cfg
     num_classes = data_cfg.num_classes
 
-    train_loader, test_loadedr = get_vertical_dataloaders(data_cfg)
-    client_fn = get_vertical_client_generator(
-        train_cfg, data_cfg.num_clients, train_loader
-    )
-    # TODO: add test validation
-    # evaluate_fn = get_evaluation_fn(num_classes, data_cfg.dataset, test_loader)
+    num_features = 561
+    features_per_client = num_features // data_cfg.num_clients
+    remainder = num_features % data_cfg.num_clients
 
-    strategy = VerticalFedAvg(data_cfg.num_clients, num_classes, train_loader)
+    client_models = [
+        ClientVerticalModel(features_per_client)
+        for _ in range(data_cfg.num_clients - 1)
+    ]
+    client_models.append(ClientVerticalModel(features_per_client + remainder))
+    server_model = ServerVerticalModel(data_cfg.num_clients, num_classes)
+
+    train_loader, test_loader = get_vertical_dataloaders(data_cfg)
+    client_fn = get_vertical_client_generator(
+        train_cfg, data_cfg.num_clients, client_models, train_loader
+    )
+    evaluate_fn = get_vertical_evaluation_fn(
+        client_models, server_model, data_cfg.num_clients, test_loader
+    )
+
+    strategy = VerticalFedAvg(
+        data_cfg.num_clients,
+        num_classes,
+        server_model,
+        train_loader,
+        evaluate_fn=evaluate_fn,
+    )
     history = start_simulation(
         client_fn=client_fn,
         num_clients=data_cfg.num_clients,
@@ -57,11 +78,10 @@ def vertical_simulation(cfg: DictConfig):
         strategy=strategy,
         client_resources={"num_cpus": sim_cfg.num_cpus, "num_gpus": sim_cfg.num_gpus},
     )
-    # TODO: implement plotting for vertical partitioning too
-    # plot_simulation(history.metrics)
+    plot_simulation(history)
 
 
-@hydra.main(config_path="conf", config_name="femnist")
+@hydra.main(config_path="conf", config_name="har")
 def main(cfg: DictConfig):
     if cfg.partitioning == "horizontal":
         horizontal_simulation(cfg)

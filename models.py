@@ -1,5 +1,7 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from data import extract_features
 
 featmaps = [32, 64, 128]
 kernels = [3, 3, 3]
@@ -84,13 +86,34 @@ class ServerVerticalModel(nn.Module):
     def __init__(self, num_clients, num_classes: int):
         super(ServerVerticalModel, self).__init__()
         self.input = nn.Linear(num_clients * latent_vector_length, 100)
-        # self.input = nn.Linear(num_clients * latent_vector_length, 100)
         self.output = nn.Linear(100, num_classes)
 
     def forward(self, x):
         x = F.relu(self.input(x))
         out = F.softmax(self.output(x))
         return out
+
+
+class FullVerticalModel(nn.Module):
+    def __init__(
+        self,
+        client_models: list[ClientVerticalModel],
+        server_model: ServerVerticalModel,
+        num_clients: int,
+    ):
+        super(FullVerticalModel, self).__init__()
+        self.client_models = client_models
+        self.server_model = server_model
+        self.num_clients = num_clients
+
+    def forward(self, x):
+        embeddings = []
+        for cid, model in enumerate(self.client_models):
+            extracted_features = extract_features(x, self.num_clients, cid)
+            embeddings.append(model(extracted_features))
+
+        embeddings_aggregated = torch.cat(embeddings, dim=1)
+        return self.server_model(embeddings_aggregated)
 
 
 def get_proper_model(num_classes: int, dataset: str, is_vertical: bool = False):

@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from flwr.common import ndarrays_to_parameters, parameters_to_ndarrays
-from models import ServerVerticalModel
 from training import *
 
 
@@ -30,6 +29,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
         self,
         num_clients: int,
         num_classes: int,
+        server_model: nn.Module,
         train_loader,
         *,
         fraction_fit: float = 1,
@@ -59,9 +59,9 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             fit_metrics_aggregation_fn=fit_metrics_aggregation_fn,
             evaluate_metrics_aggregation_fn=evaluate_metrics_aggregation_fn,
         )
-        self.model = ServerVerticalModel(num_clients, num_classes)
+        self.server_model = server_model
         # TODO: insert these in the train_cfg
-        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
+        self.optimizer = optim.SGD(self.server_model.parameters(), lr=0.01)
         self.criterion = nn.CrossEntropyLoss()
         self.train_loader = train_loader
 
@@ -81,7 +81,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
 
             server_embedding = parameters_to_embeddings(results)
 
-            output = self.model(server_embedding)
+            output = self.server_model(server_embedding)
             loss = self.criterion(output, labels)
             loss.backward()
             self.optimizer.step()
@@ -90,7 +90,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             parameters_aggregated = gradients_to_parameters(server_embedding)
 
         with torch.no_grad():
-            output = self.model(server_embedding)
+            output = self.server_model(server_embedding)
             _, predicted = torch.max(output, dim=1)
             _, true_labels = torch.max(labels, dim=1)
 
@@ -106,6 +106,5 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
         results,
         failures,
     ):
-        print("CHIAMATA AGGREGATE_EVALUATE CI SI PO FA QUALCOSA")
         metrics = {}
         return None, metrics

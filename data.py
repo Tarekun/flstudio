@@ -222,3 +222,17 @@ def get_vertical_dataloaders(data_cfg: DictConfig) -> tuple[DataLoader, DataLoad
     return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
         test_set, batch_size=data_cfg.batch_size, shuffle=False
     )
+
+
+def extract_features(full_features, num_clients, cid):
+    """Gets only the features of this specific client"""
+    # total_features = len(full_features)
+    total_features = 561
+    features_per_client = total_features // num_clients
+    start_idx = cid * features_per_client
+    # if it is the last client we return everything from start_idx to the end
+    end_idx = (
+        start_idx + features_per_client if cid < num_clients - 1 else total_features
+    )
+
+    return full_features[:, start_idx:end_idx]
