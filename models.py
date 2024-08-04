@@ -6,6 +6,8 @@ kernels = [3, 3, 3]
 first_linear_size = featmaps[2] * kernels[2] * kernels[2]
 linears = [512, 256, 62]
 
+latent_vector_length = 100
+
 
 class CnnEmnist(nn.Module):
     def __init__(self, num_classes: int):
@@ -49,7 +51,7 @@ class CnnEmnist(nn.Module):
         x = self.fc2(x)
 
         # final layer uses softmax as this is a classification problem
-        out = F.log_softmax(self.fc3(x), dim=1)
+        out = F.softmax(self.fc3(x), dim=1)
         return out
 
 
@@ -62,11 +64,36 @@ class HarModel(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
 
-        out = F.log_softmax(self.fc4(x), dim=1)
+        out = F.softmax(self.fc4(x), dim=1)
         return out
 
 
-def get_proper_model(num_classes: int, dataset: str):
+class ClientVerticalModel(nn.Module):
+    def __init__(self, num_features: int):
+        super(ClientVerticalModel, self).__init__()
+        self.input = nn.Linear(num_features, 100)
+        self.latent = nn.Linear(100, latent_vector_length)
+
+    def forward(self, x):
+        x = F.relu(self.input(x))
+        latent = F.relu(self.latent(x))
+        return latent
+
+
+class ServerVerticalModel(nn.Module):
+    def __init__(self, num_clients, num_classes: int):
+        super(ServerVerticalModel, self).__init__()
+        self.input = nn.Linear(num_clients * latent_vector_length, 100)
+        # self.input = nn.Linear(num_clients * latent_vector_length, 100)
+        self.output = nn.Linear(100, num_classes)
+
+    def forward(self, x):
+        x = F.relu(self.input(x))
+        out = F.softmax(self.output(x))
+        return out
+
+
+def get_proper_model(num_classes: int, dataset: str, is_vertical: bool = False):
     if dataset == "femnist":
         return CnnEmnist(num_classes)
     elif dataset == "har":

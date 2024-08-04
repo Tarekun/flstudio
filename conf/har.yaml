@@ -2,7 +2,7 @@ defaults:
   - _self_
 
 sim_cfg:
-  num_rounds: 2
+  num_rounds: 5
   num_cpus: 2
   num_gpus: 0.0
 
@@ -12,7 +12,7 @@ train_cfg:
   momentum: 0.9
 
 data_cfg:
-  num_clients: 30
+  num_clients: 2
   hybrid_ratio: 0.0
   batch_size: 32
   dataset: har

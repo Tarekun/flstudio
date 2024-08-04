@@ -13,6 +13,19 @@ transform = transforms.Compose(
 )
 
 
+class VerticallyPartitiableDataset(Dataset):
+    def __init__(self):
+        # default state is that the set is not vertically partioned
+        # so it's partition index is None
+        self.partition_index = None
+
+    def set_partition_index(self, idx: int):
+        self.partition_index = idx
+
+    def get_feature_shape(self):
+        raise Exception("Subclass should implement the get_feature_length function")
+
+
 class FemnistWriterDataset(Dataset):
     def __init__(self, images: np.ndarray, labels: np.ndarray, transform=None):
         if len(images) != len(labels):
@@ -34,7 +47,10 @@ class FemnistWriterDataset(Dataset):
         return len(self.y)
 
 
-class HarDataset(Dataset):
+class HarDataset(VerticallyPartitiableDataset):
+    # indexes of different partitions of the features for vertical federation
+    vertical_partitions = [0, 200, 400, 562]
+
     def __load_x__(filename) -> list[list[float]]:
         data = []
         with open(filename, "r") as file:
@@ -54,6 +70,7 @@ class HarDataset(Dataset):
         return labels
 
     def __init__(self, train=True, transform=None):
+        super().__init__()
         variant = "train" if train else "test"
         self.x = HarDataset.__load_x__(f"data/X_{variant}.txt")
         self.y = HarDataset.__load_y__(f"data/y_{variant}.txt")
@@ -67,6 +84,12 @@ class HarDataset(Dataset):
     def __getitem__(self, index):
         target_data = self.y[index]
         input_data = self.x[index]
+        # crop feature space
+        if self.partition_index != None:
+            start = self.vertical_partitions[self.partition_index]
+            end = self.vertical_partitions[self.partition_index + 1]
+            input_data = input_data[start:end]
+
         if self.transform:
             input_data = self.transform(input_data)
 
@@ -74,6 +97,11 @@ class HarDataset(Dataset):
 
     def __len__(self):
         return len(self.y)
+
+    def get_feature_shape(self):
+        start = self.vertical_partitions[self.partition_index]
+        end = self.vertical_partitions[self.partition_index + 1]
+        return end - start
 
 
 def split_dataset(dataset, val_ratio: float, test_ratio: float):
@@ -117,6 +145,7 @@ def _get_femnist_datasets(
         val_sets.append(val_subset)
         test_sets.append(test_subset)
 
+    full_dataset.close()
     return train_sets, val_sets, test_sets
 
 
@@ -126,21 +155,21 @@ def _get_har_datasets(
     full_trainset = HarDataset(train=True)
     full_testset = HarDataset(train=False)
 
-    train_size, test_size = len(full_trainset), len(full_testset)
-    train_sizes = [train_size // num_clients] * num_clients
-    test_sizes = [test_size // num_clients] * num_clients
-    train_sizes[0] += len(full_trainset) % num_clients
-    test_sizes[0] += len(full_testset) % num_clients
+    def partition_horizontally():
+        train_size = len(full_trainset)
+        train_sizes = [train_size // num_clients] * num_clients
+        train_sizes[0] += len(full_trainset) % num_clients
 
-    train_splits = random_split(full_trainset, train_sizes)
-    test_splits = random_split(full_testset, test_sizes)
+        return random_split(full_trainset, train_sizes)
+
+    train_splits = partition_horizontally()
     # this dataset is already split into 70% train and 30% test, no validation used
-    return train_splits, [], test_splits
+    return train_splits, full_testset
 
 
 def _get_datasets(
     data_cfg: DictConfig,
-) -> tuple[list[Dataset], list[Dataset], list[Dataset]]:
+) -> tuple[list[Dataset], list[Dataset], Dataset]:
     if data_cfg.dataset == "femnist":
         train_sets, val_sets, test_sets = _get_femnist_datasets(
             data_cfg.num_clients,
@@ -148,14 +177,16 @@ def _get_datasets(
             data_cfg.test_ratio,
             data_cfg.only_digits,
         )
+        return train_sets, val_sets, ConcatDataset(test_sets)
+
     elif data_cfg.dataset == "har":
-        train_sets, val_sets, test_sets = _get_har_datasets(
+        train_sets, test_set = _get_har_datasets(
             data_cfg.num_clients,
         )
+        return train_sets, [], test_set
+
     else:
         raise ValueError(f"Unsupported dataset: {data_cfg.dataset}")
-
-    return train_sets, val_sets, test_sets
 
 
 def get_dataloaders(
@@ -163,9 +194,8 @@ def get_dataloaders(
 ) -> tuple[list[DataLoader], DataLoader]:
     """Instatiates and returns the DataLoaders for the FEMNIST dataset partitioned by user"""
 
-    train_sets, _, test_sets = _get_datasets(data_cfg)
+    train_sets, _, test_set = _get_datasets(data_cfg)
     num_centralized = int(data_cfg.hybrid_ratio * data_cfg.num_clients)
-    #
     if num_centralized > 0:
         train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
             num_centralized:
@@ -177,8 +207,18 @@ def get_dataloaders(
     ]
 
     # collapse the test datasets into one to test the global model
-    combined_test_dataset = ConcatDataset(test_sets)
-    test_loader = DataLoader(
-        combined_test_dataset, batch_size=data_cfg.batch_size, shuffle=False
-    )
+    test_loader = DataLoader(test_set, batch_size=data_cfg.batch_size, shuffle=False)
     return train_loaders, test_loader
+
+
+def get_vertical_dataloaders(data_cfg: DictConfig) -> tuple[DataLoader, DataLoader]:
+    train_set = HarDataset(train=True)
+    test_set = HarDataset(train=False)
+
+    # process the whole training set in one batch as the output of local models
+    # will be an embedding used as input for the server model, which will be the one
+    # compute the gradient's for both local and global model
+    # test set is still processed with configured batch size (should I change this??)
+    return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
+        test_set, batch_size=data_cfg.batch_size, shuffle=False
+    )
