@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from flwr.common import ndarrays_to_parameters, parameters_to_ndarrays
 from models import ServerVerticalModel
+
 from training import *
 
 
