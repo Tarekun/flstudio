@@ -1,22 +1,24 @@
 defaults:
   - _self_
 
+partitioning: horizontal
+
 sim_cfg:
-  num_rounds: 15
+  num_rounds: 2
   num_cpus: 2
   num_gpus: 0.0
 
 train_cfg:
-  epochs: 1
+  epochs: 2
   lr: 0.01
   momentum: 0.9
 
 data_cfg:
-  num_clients: 750
-  hybrid_ratio: 0.05
+  num_clients: 21
+  hybrid_ratio: 0.5
   batch_size: 32
   val_ratio: 0.0
-  test_ratio: 0.1
+  test_ratio: 0.2
   dataset: femnist
   # warning: these values must always be changed together
   only_digits: false

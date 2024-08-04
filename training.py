@@ -83,8 +83,9 @@ def evaluate_model(model: nn.Module, test_loader) -> float:
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
 
-            labels_indices = torch.argmax(labels, dim=1)
-            correct += (predicted == labels_indices).sum().item()
+            # labels_indices = torch.argmax(labels, dim=1)
+            # correct += (predicted == labels_indices).sum().item()
+            correct += (predicted == labels).sum().item()
 
     accuracy = correct / total
     print(f"Evaluation accuracy on the test dataset: {100 * accuracy:.2f}%")

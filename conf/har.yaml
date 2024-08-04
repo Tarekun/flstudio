@@ -1,8 +1,10 @@
 defaults:
   - _self_
 
+partitioning: vertical
+
 sim_cfg:
-  num_rounds: 5
+  num_rounds: 2
   num_cpus: 2
   num_gpus: 0.0
 

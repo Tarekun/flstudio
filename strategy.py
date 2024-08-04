@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.optim as optim
 from flwr.common import ndarrays_to_parameters, parameters_to_ndarrays
 from models import ServerVerticalModel
-
 from training import *
 
 
@@ -25,20 +24,12 @@ def gradients_to_parameters(server_embedding):
     grads = [grad.numpy() for grad in grads]
     return ndarrays_to_parameters(grads)
 
-    # total_dim = server_embedding.grad.size(1)
-    # split_sizes = [
-    #     total_dim // len(server_embedding.grad.size(1))
-    #     for _ in range(len(server_embedding.grad.size(1)))
-    # ]
-    # grads = server_embedding.grad.split(split_sizes, dim=1)
-    # grads = [grad.numpy() for grad in grads]
-    # return ndarrays_to_parameters(grads)
-
 
 class VerticalFedAvg(fl.server.strategy.FedAvg):
     def __init__(
         self,
         num_clients: int,
+        num_classes: int,
         train_loader,
         *,
         fraction_fit: float = 1,
@@ -68,7 +59,8 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             fit_metrics_aggregation_fn=fit_metrics_aggregation_fn,
             evaluate_metrics_aggregation_fn=evaluate_metrics_aggregation_fn,
         )
-        self.model = ServerVerticalModel(num_clients, 6)
+        self.model = ServerVerticalModel(num_clients, num_classes)
+        # TODO: insert these in the train_cfg
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
         self.criterion = nn.CrossEntropyLoss()
         self.train_loader = train_loader
@@ -79,7 +71,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
         results,
         failures,
     ):
-        # Do not aggregate if there are failures and failures are not accepted
+        # do not aggregate if there are failures and failures are not accepted
         if not self.accept_failures and failures:
             return None, {}
 
@@ -105,7 +97,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             correct = (predicted == true_labels).sum().item()
             accuracy = correct / len(true_labels) * 100
 
-        metrics = {"accuracy": accuracy}
+        metrics = {"accuracy": accuracy, "loss": loss.item()}
         return parameters_aggregated, metrics
 
     def aggregate_evaluate(
@@ -115,4 +107,5 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
         failures,
     ):
         print("CHIAMATA AGGREGATE_EVALUATE CI SI PO FA QUALCOSA")
-        return None, {}
+        metrics = {}
+        return None, metrics
