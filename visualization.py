@@ -21,7 +21,30 @@ def create_plot(filename: str, x, y, title="", ylabel=""):
     plt.close()
 
 
-def plot_simulation(history):
+def create_single_plot(filename: str, rounds, losses, accuracies):
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Plotting losses
+    ax1.set_xlabel("Round")
+    ax1.set_ylabel("Loss", color="red")
+    ax1.plot(rounds, losses, marker="o", color="red", label="Loss")
+    ax1.tick_params(axis="y", labelcolor="red")
+
+    # Creating second y-axis for accuracy
+    ax2 = ax1.twinx()
+    ax2.set_ylabel("Accuracy (%)", color="blue")
+    ax2.plot(rounds, accuracies, marker="o", color="blue", label="Accuracy")
+    ax2.tick_params(axis="y", labelcolor="blue")
+
+    fig.tight_layout()
+    plt.title(f"Last Accuracy: {round(accuracies[len(accuracies)-1], 2)}%")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(filename)
+    plt.close()
+
+
+def plot_simulation(history, base_name=""):
     losses = extract_metric_data(history.metrics_centralized["loss"])
     accuracies = [
         100.0 * value
@@ -29,11 +52,6 @@ def plot_simulation(history):
     ]
     rounds = [i for i in range(len(losses))]
 
-    create_plot("loss_per_round.png", x=rounds, y=losses, title="Loss per round")
-    create_plot(
-        "accuracy_per_round.png",
-        x=rounds,
-        y=accuracies,
-        title="Accuracy per round",
-        ylabel=f"last: {round(accuracies[len(accuracies)-1], 2)}%",
-    )
+    base = os.path.join(PLOTS_DIR, base_name)
+    os.makedirs(base, exist_ok=True)
+    create_single_plot(f"{base}/results.png", rounds, losses, accuracies)
