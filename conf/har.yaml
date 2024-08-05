@@ -4,17 +4,21 @@ defaults:
 partitioning: vertical
 
 sim_cfg:
-  num_rounds: 2
+  num_rounds: 50
   num_cpus: 2
   num_gpus: 0.0
 
 train_cfg:
   epochs: 5
-  lr: 0.01
-  momentum: 0.9
+  optimizer:
+    _target_: torch.optim.SGD
+    lr: 0.1
+    momentum: 0.9
+  loss_fn:
+    _target_: torch.nn.CrossEntropyLoss
 
 data_cfg:
-  num_clients: 2
+  num_clients: 11
   hybrid_ratio: 0.0
   batch_size: 32
   dataset: har

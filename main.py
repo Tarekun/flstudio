@@ -21,7 +21,7 @@ def horizontal_simulation(cfg: DictConfig):
         num_classes, data_cfg.dataset, train_cfg, train_loaders
     )
     evaluate_fn = get_horizontal_evaluation_fn(
-        num_classes, data_cfg.dataset, test_loader
+        num_classes, data_cfg.dataset, test_loader, train_cfg
     )
 
     strategy = FedAvg(
@@ -61,7 +61,7 @@ def vertical_simulation(cfg: DictConfig):
         train_cfg, data_cfg.num_clients, client_models, train_loader
     )
     evaluate_fn = get_vertical_evaluation_fn(
-        client_models, server_model, data_cfg.num_clients, test_loader
+        client_models, server_model, data_cfg.num_clients, test_loader, train_cfg
     )
 
     strategy = VerticalFedAvg(
@@ -69,6 +69,7 @@ def vertical_simulation(cfg: DictConfig):
         num_classes,
         server_model,
         train_loader,
+        train_cfg,
         evaluate_fn=evaluate_fn,
     )
     history = start_simulation(

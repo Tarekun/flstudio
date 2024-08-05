@@ -4,19 +4,21 @@ import torch.optim as optim
 from omegaconf import DictConfig
 from models import get_proper_model, FullVerticalModel
 from collections import OrderedDict
+import hydra
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
-criterion = nn.CrossEntropyLoss()
 
 
-def validate(model: nn.Module, val_loader):
+def validate(model: nn.Module, val_loader, train_cfg: DictConfig):
     # Validation step
     model.eval()
     val_loss = 0.0
     correct = 0
     total = 0
+    criterion = hydra.utils.instantiate(train_cfg.loss_fn)
+
     with torch.no_grad():
         for images, labels in val_loader:
             images = images.to(device)
@@ -36,9 +38,8 @@ def validate(model: nn.Module, val_loader):
 
 
 def train(model: nn.Module, train_loader, train_cfg: DictConfig, val_loader=None):
-    optimizer = optim.SGD(
-        model.parameters(), lr=train_cfg.lr, momentum=train_cfg.momentum
-    )
+    optimizer = hydra.utils.instantiate(train_cfg.optimizer, params=model.parameters())
+    criterion = hydra.utils.instantiate(train_cfg.loss_fn)
     model.to(device)
 
     for epoch in range(train_cfg.epochs):
@@ -65,10 +66,11 @@ def train(model: nn.Module, train_loader, train_cfg: DictConfig, val_loader=None
             validate(model, val_loader)
 
 
-def evaluate_model(model: nn.Module, test_loader) -> float:
+def evaluate_model(model: nn.Module, test_loader, train_cfg: DictConfig) -> float:
     correct = 0
     total = 0
     total_loss = 0.0
+    criterion = hydra.utils.instantiate(train_cfg.loss_fn)
     # Put the model in evaluation mode ??
     model.eval()
     model.to(device)
@@ -93,15 +95,17 @@ def evaluate_model(model: nn.Module, test_loader) -> float:
     return total_loss, accuracy
 
 
-def get_horizontal_evaluation_fn(num_classes: int, dataset: str, test_loader):
+def get_horizontal_evaluation_fn(
+    num_classes: int, dataset: str, test_loader, train_cfg
+):
     def evaluation_fn(server_round, parameters, config):
         model = get_proper_model(num_classes, dataset)
         params_dict = zip(model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         model.load_state_dict(state_dict, strict=True)
 
-        loss, accuracy = evaluate_model(model, test_loader)
-        return loss, {"accuracy": accuracy, "loss": loss}
+        loss, accuracy = evaluate_model(model, test_loader, train_cfg)
+        return loss, {"accuracy": accuracy, "loss": loss.item()}
 
     return evaluation_fn
 
@@ -111,13 +115,11 @@ def get_vertical_evaluation_fn(
     server_model: nn.Module,
     num_clients: int,
     test_loader,
+    train_cfg,
 ):
     def evaluation_fn(server_round, parameters, config):
-        print(
-            "#####################################################################################"
-        )
         full_model = FullVerticalModel(client_models, server_model, num_clients)
-        loss, accuracy = evaluate_model(full_model, test_loader)
-        return loss, {"accuracy": accuracy, "loss": loss}
+        loss, accuracy = evaluate_model(full_model, test_loader, train_cfg)
+        return loss, {"accuracy": accuracy, "loss": loss.item()}
 
     return evaluation_fn

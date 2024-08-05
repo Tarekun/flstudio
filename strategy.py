@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch.optim as optim
 from flwr.common import ndarrays_to_parameters, parameters_to_ndarrays
 from training import *
+from models import latent_vector_length
+import hydra
 
 
 def parameters_to_embeddings(results):
@@ -18,8 +20,9 @@ def parameters_to_embeddings(results):
     return server_embedding
 
 
-def gradients_to_parameters(server_embedding):
-    grads = server_embedding.grad.split([100, 100], dim=1)
+def gradients_to_parameters(server_embedding, num_clients):
+    # TODO: fix this list to properly generalize
+    grads = server_embedding.grad.split([latent_vector_length] * num_clients, dim=1)
     grads = [grad.numpy() for grad in grads]
     return ndarrays_to_parameters(grads)
 
@@ -31,6 +34,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
         num_classes: int,
         server_model: nn.Module,
         train_loader,
+        train_cfg,
         *,
         fraction_fit: float = 1,
         fraction_evaluate: float = 1,
@@ -60,10 +64,13 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             evaluate_metrics_aggregation_fn=evaluate_metrics_aggregation_fn,
         )
         self.server_model = server_model
-        # TODO: insert these in the train_cfg
-        self.optimizer = optim.SGD(self.server_model.parameters(), lr=0.01)
-        self.criterion = nn.CrossEntropyLoss()
+        # TODO: am i supposed to only use server_model.parameters or should i consider client's ones too?
+        self.optimizer = hydra.utils.instantiate(
+            train_cfg.optimizer, params=server_model.parameters()
+        )
+        self.criterion = hydra.utils.instantiate(train_cfg.loss_fn)
         self.train_loader = train_loader
+        self.num_clients = num_clients
 
     def aggregate_fit(
         self,
@@ -87,7 +94,9 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             self.optimizer.step()
             self.optimizer.zero_grad()
 
-            parameters_aggregated = gradients_to_parameters(server_embedding)
+            parameters_aggregated = gradients_to_parameters(
+                server_embedding, self.num_clients
+            )
 
         with torch.no_grad():
             output = self.server_model(server_embedding)

@@ -5,6 +5,7 @@ from training import train, evaluate_model, device
 from models import *
 from omegaconf import DictConfig
 from data import extract_features
+import hydra
 
 
 class HorizontalClient(fl.client.NumPyClient):
@@ -44,7 +45,10 @@ class VerticalClient(fl.client.NumPyClient):
         self.total_features = total_features
         self.train_loader = train_loader
         self.train_cfg = train_cfg
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01)
+        self.optimizer = hydra.utils.instantiate(
+            train_cfg.optimizer, params=self.model.parameters()
+        )
+
         self.embedding = None
         self.forward_pass()
 
