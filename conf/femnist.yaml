@@ -9,7 +9,7 @@ sim_cfg:
   num_gpus: 0.0
 
 train_cfg:
-  epochs: 2
+  epochs: 3
   optimizer:
     _target_: torch.optim.SGD
     lr: 0.01
@@ -29,5 +29,9 @@ data_cfg:
   num_classes: 62
 
 hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      train_cfg.optimizer.lr: 0.01, 0.02, 0.04, 0.06
   run:
     dir: .
