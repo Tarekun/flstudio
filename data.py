@@ -156,7 +156,7 @@ def _get_datasets(
     """Returns the configured dataset already split in train, val, and test. Returns a 3 element tuple containing:
     - the list of training sets partitioned per client
     - the list of validation sets partitioned per client
-    - on single test set to evaluate the global model"""
+    - one single test set to evaluate the global model"""
 
     if data_cfg.dataset == "femnist":
         train_sets, val_sets, test_sets = _get_femnist_datasets(
@@ -201,7 +201,7 @@ def get_horizontal_dataloaders(
         DataLoader(train_set, batch_size=data_cfg.batch_size, shuffle=True)
         for train_set in train_sets
     ]
-    test_loader = DataLoader(test_set, batch_size=data_cfg.batch_size, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=len(test_set), shuffle=False)
 
     return train_loaders, test_loader
 
@@ -218,16 +218,14 @@ def get_vertical_dataloaders(data_cfg: DictConfig) -> tuple[DataLoader, DataLoad
     # process the whole training set in one batch as the output of local models
     # will be an embedding used as input for the server model, which will be the one
     # compute the gradient's for both local and global model
-    # test set is still processed with configured batch size (should I change this??)
     return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
-        test_set, batch_size=data_cfg.batch_size, shuffle=False
+        test_set, batch_size=len(test_set), shuffle=False
     )
 
 
 def extract_features(full_features, num_clients, cid):
     """Gets only the features of this specific client"""
-    # total_features = len(full_features)
-    total_features = 561
+    total_features = 561  # TODO: find a better way of setting this
     features_per_client = total_features // num_clients
     start_idx = cid * features_per_client
     # if it is the last client we return everything from start_idx to the end

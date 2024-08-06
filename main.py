@@ -45,7 +45,7 @@ def vertical_simulation(cfg: DictConfig):
     sim_cfg, train_cfg, data_cfg = cfg.sim_cfg, cfg.train_cfg, cfg.data_cfg
     num_classes = data_cfg.num_classes
 
-    num_features = 561
+    num_features = 561  # TODO: find a better way of setting this
     features_per_client = num_features // data_cfg.num_clients
     remainder = num_features % data_cfg.num_clients
 

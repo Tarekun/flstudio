@@ -85,10 +85,13 @@ def evaluate_model(model: nn.Module, test_loader, train_cfg: DictConfig) -> floa
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
 
-            # TODO: label encoding still causes problems here
-            labels_indices = torch.argmax(labels, dim=1)
+            # if labels are one hot encoded get the indices, otherwise use the labels
+            labels_indices = (
+                torch.argmax(labels, dim=1)
+                if labels.ndim > 1 and labels.size(1) > 1
+                else labels
+            )
             correct += (predicted == labels_indices).sum().item()
-            # correct += (predicted == labels).sum().item()
 
     accuracy = correct / total
     print(f"Evaluation accuracy on the test dataset: {100 * accuracy:.2f}%")

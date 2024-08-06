@@ -21,7 +21,6 @@ def parameters_to_embeddings(results):
 
 
 def gradients_to_parameters(server_embedding, num_clients):
-    # TODO: fix this list to properly generalize
     grads = server_embedding.grad.split([latent_vector_length] * num_clients, dim=1)
     grads = [grad.numpy() for grad in grads]
     return ndarrays_to_parameters(grads)
@@ -64,7 +63,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             evaluate_metrics_aggregation_fn=evaluate_metrics_aggregation_fn,
         )
         self.server_model = server_model
-        # TODO: am i supposed to only use server_model.parameters or should i consider client's ones too?
+        # TODO: am i supposed to only use server_model.parameters or should i consider clients' ones too?
         self.optimizer = hydra.utils.instantiate(
             train_cfg.optimizer, params=server_model.parameters()
         )
