@@ -94,7 +94,7 @@ def vertical_simulation(cfg: DictConfig):
     )
 
 
-@hydra.main(config_path="conf", config_name="femnist")
+@hydra.main(config_path="conf", config_name="femnist", version_base="1.2")
 def main(cfg: DictConfig):
     if cfg.partitioning == "horizontal":
         horizontal_simulation(cfg)
