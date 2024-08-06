@@ -5,25 +5,12 @@ from torch.utils.data import ConcatDataset, Dataset, DataLoader, random_split
 import numpy as np
 from omegaconf import DictConfig
 
-transform = transforms.Compose(
+femnist_transform = transforms.Compose(
     [
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,)),  # Normalize the data to [-1, 1]
     ]
 )
-
-
-class VerticallyPartitiableDataset(Dataset):
-    def __init__(self):
-        # default state is that the set is not vertically partioned
-        # so it's partition index is None
-        self.partition_index = None
-
-    def set_partition_index(self, idx: int):
-        self.partition_index = idx
-
-    def get_feature_shape(self):
-        raise Exception("Subclass should implement the get_feature_length function")
 
 
 class FemnistWriterDataset(Dataset):
@@ -33,7 +20,7 @@ class FemnistWriterDataset(Dataset):
                 f"Different number of images ({len(images)}) and labels ({len(labels)})"
             )
         self.x, self.y = images, labels
-        self.transform = transform
+        self.transform = transform if not transform is None else femnist_transform
 
     def __getitem__(self, index):
         target_data = self.y[index]
@@ -47,10 +34,7 @@ class FemnistWriterDataset(Dataset):
         return len(self.y)
 
 
-class HarDataset(VerticallyPartitiableDataset):
-    # indexes of different partitions of the features for vertical federation
-    vertical_partitions = [0, 200, 400, 562]
-
+class HarDataset(Dataset):
     def __load_x__(filename) -> list[list[float]]:
         data = []
         with open(filename, "r") as file:
@@ -84,11 +68,6 @@ class HarDataset(VerticallyPartitiableDataset):
     def __getitem__(self, index):
         target_data = self.y[index]
         input_data = self.x[index]
-        # crop feature space
-        if self.partition_index != None:
-            start = self.vertical_partitions[self.partition_index]
-            end = self.vertical_partitions[self.partition_index + 1]
-            input_data = input_data[start:end]
 
         if self.transform:
             input_data = self.transform(input_data)
@@ -98,13 +77,8 @@ class HarDataset(VerticallyPartitiableDataset):
     def __len__(self):
         return len(self.y)
 
-    def get_feature_shape(self):
-        start = self.vertical_partitions[self.partition_index]
-        end = self.vertical_partitions[self.partition_index + 1]
-        return end - start
 
-
-def split_dataset(dataset, val_ratio: float, test_ratio: float):
+def _split_dataset(dataset, val_ratio: float, test_ratio: float):
     """Splits the training dataset into training subset and validation subset"""
     tot_size = len(dataset)
     val_size = int(val_ratio * tot_size)
@@ -123,9 +97,11 @@ def _get_femnist_datasets(
     test_ratio: float,
     only_digits: bool = False,
 ) -> tuple[list[Dataset], list[Dataset], list[Dataset]]:
-    """Retrieves the FEMNIST dataset at the HDF5 file"""
+    """Retrieves the FEMNIST dataset at the HDF5 file. It returns a 3 element tuple containing:
+    - the list of training sets partitioned per client
+    - the list of validation sets partitioned per client
+    - the list of test sets partitioned per client"""
 
-    # TODO: include digits dataset file and choose how to properly handle these
     dataset_file = "write_digits.hdf5" if only_digits else "write_all.hdf5"
     full_dataset = h5py.File(f"data/{dataset_file}", "r")
     writers = sorted(full_dataset.keys())[:num_writers]
@@ -136,10 +112,12 @@ def _get_femnist_datasets(
     for writer in writers:
         images = full_dataset[writer]["images"][:]
         labels = full_dataset[writer]["labels"][:]
-        dataset = FemnistWriterDataset(images, labels, transform=transform)
+        client_dataset = FemnistWriterDataset(
+            images, labels, transform=femnist_transform
+        )
 
-        train_subset, val_subset, test_subset = split_dataset(
-            dataset, val_ratio, test_ratio
+        train_subset, val_subset, test_subset = _split_dataset(
+            client_dataset, val_ratio, test_ratio
         )
         train_sets.append(train_subset)
         val_sets.append(val_subset)
@@ -151,13 +129,18 @@ def _get_femnist_datasets(
 
 def _get_har_datasets(
     num_clients: int,
-) -> tuple[list[Dataset], list[Dataset], list[Dataset]]:
+) -> tuple[list[Dataset], Dataset]:
+    """Retrieves the HAR dataset. It returns a 2 element tuple containing:
+    - the list of training sets partitioned per client
+    - the full test set unpartitioned"""
+
     full_trainset = HarDataset(train=True)
     full_testset = HarDataset(train=False)
 
     def partition_horizontally():
         train_size = len(full_trainset)
         train_sizes = [train_size // num_clients] * num_clients
+        # TODO: remainder is fully added the the first client
         train_sizes[0] += len(full_trainset) % num_clients
 
         return random_split(full_trainset, train_sizes)
@@ -170,6 +153,11 @@ def _get_har_datasets(
 def _get_datasets(
     data_cfg: DictConfig,
 ) -> tuple[list[Dataset], list[Dataset], Dataset]:
+    """Returns the configured dataset already split in train, val, and test. Returns a 3 element tuple containing:
+    - the list of training sets partitioned per client
+    - the list of validation sets partitioned per client
+    - one single test set to evaluate the global model"""
+
     if data_cfg.dataset == "femnist":
         train_sets, val_sets, test_sets = _get_femnist_datasets(
             data_cfg.num_clients,
@@ -189,36 +177,60 @@ def _get_datasets(
         raise ValueError(f"Unsupported dataset: {data_cfg.dataset}")
 
 
-def get_dataloaders(
-    data_cfg: DictConfig,
-) -> tuple[list[DataLoader], DataLoader]:
-    """Instatiates and returns the DataLoaders for the FEMNIST dataset partitioned by user"""
-
-    train_sets, _, test_set = _get_datasets(data_cfg)
-    num_centralized = int(data_cfg.hybrid_ratio * data_cfg.num_clients)
+def _centralize_trainsets(train_sets, num_clients, hybrid_ratio):
+    num_centralized = int(hybrid_ratio * num_clients)
     if num_centralized > 0:
         train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
             num_centralized:
         ]
 
+    return train_sets
+
+
+def get_horizontal_dataloaders(
+    data_cfg: DictConfig,
+) -> tuple[list[DataLoader], DataLoader]:
+    """Instatiates and returns the train and test DataLoaders for the configured dataset partitioned by user"""
+
+    train_sets, _, test_set = _get_datasets(data_cfg)
+    train_sets = _centralize_trainsets(
+        train_sets, data_cfg.hybrid_ratio, data_cfg.num_clients
+    )
+
     train_loaders = [
         DataLoader(train_set, batch_size=data_cfg.batch_size, shuffle=True)
         for train_set in train_sets
     ]
+    test_loader = DataLoader(test_set, batch_size=len(test_set), shuffle=False)
 
-    # collapse the test datasets into one to test the global model
-    test_loader = DataLoader(test_set, batch_size=data_cfg.batch_size, shuffle=False)
     return train_loaders, test_loader
 
 
 def get_vertical_dataloaders(data_cfg: DictConfig) -> tuple[DataLoader, DataLoader]:
+    if data_cfg.dataset != "har":
+        raise ValueError(
+            f"Only vertical supported dataset is HAR, requested was: {data_cfg.dataset}"
+        )
+
     train_set = HarDataset(train=True)
     test_set = HarDataset(train=False)
 
     # process the whole training set in one batch as the output of local models
     # will be an embedding used as input for the server model, which will be the one
     # compute the gradient's for both local and global model
-    # test set is still processed with configured batch size (should I change this??)
     return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
-        test_set, batch_size=data_cfg.batch_size, shuffle=False
+        test_set, batch_size=len(test_set), shuffle=False
     )
+
+
+def extract_features(full_features, num_clients, cid):
+    """Gets only the features of this specific client"""
+    total_features = 561  # TODO: find a better way of setting this
+    features_per_client = total_features // num_clients
+    start_idx = cid * features_per_client
+    # if it is the last client we return everything from start_idx to the end
+    end_idx = (
+        start_idx + features_per_client if cid < num_clients - 1 else total_features
+    )
+
+    return full_features[:, start_idx:end_idx]

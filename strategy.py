@@ -4,8 +4,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from flwr.common import ndarrays_to_parameters, parameters_to_ndarrays
-from models import ServerVerticalModel
 from training import *
+from models import latent_vector_length
+import hydra
 
 
 def parameters_to_embeddings(results):
@@ -19,26 +20,20 @@ def parameters_to_embeddings(results):
     return server_embedding
 
 
-def gradients_to_parameters(server_embedding):
-    grads = server_embedding.grad.split([100, 100], dim=1)
+def gradients_to_parameters(server_embedding, num_clients):
+    grads = server_embedding.grad.split([latent_vector_length] * num_clients, dim=1)
     grads = [grad.numpy() for grad in grads]
     return ndarrays_to_parameters(grads)
-
-    # total_dim = server_embedding.grad.size(1)
-    # split_sizes = [
-    #     total_dim // len(server_embedding.grad.size(1))
-    #     for _ in range(len(server_embedding.grad.size(1)))
-    # ]
-    # grads = server_embedding.grad.split(split_sizes, dim=1)
-    # grads = [grad.numpy() for grad in grads]
-    # return ndarrays_to_parameters(grads)
 
 
 class VerticalFedAvg(fl.server.strategy.FedAvg):
     def __init__(
         self,
         num_clients: int,
+        num_classes: int,
+        server_model: nn.Module,
         train_loader,
+        train_cfg,
         *,
         fraction_fit: float = 1,
         fraction_evaluate: float = 1,
@@ -67,10 +62,14 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             fit_metrics_aggregation_fn=fit_metrics_aggregation_fn,
             evaluate_metrics_aggregation_fn=evaluate_metrics_aggregation_fn,
         )
-        self.model = ServerVerticalModel(num_clients, 6)
-        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01)
-        self.criterion = nn.CrossEntropyLoss()
+        self.server_model = server_model
+        # TODO: am i supposed to only use server_model.parameters or should i consider clients' ones too?
+        self.optimizer = hydra.utils.instantiate(
+            train_cfg.optimizer, params=server_model.parameters()
+        )
+        self.criterion = hydra.utils.instantiate(train_cfg.loss_fn)
         self.train_loader = train_loader
+        self.num_clients = num_clients
 
     def aggregate_fit(
         self,
@@ -78,7 +77,7 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
         results,
         failures,
     ):
-        # Do not aggregate if there are failures and failures are not accepted
+        # do not aggregate if there are failures and failures are not accepted
         if not self.accept_failures and failures:
             return None, {}
 
@@ -88,23 +87,25 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
 
             server_embedding = parameters_to_embeddings(results)
 
-            output = self.model(server_embedding)
+            output = self.server_model(server_embedding)
             loss = self.criterion(output, labels)
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
 
-            parameters_aggregated = gradients_to_parameters(server_embedding)
+            parameters_aggregated = gradients_to_parameters(
+                server_embedding, self.num_clients
+            )
 
         with torch.no_grad():
-            output = self.model(server_embedding)
+            output = self.server_model(server_embedding)
             _, predicted = torch.max(output, dim=1)
             _, true_labels = torch.max(labels, dim=1)
 
             correct = (predicted == true_labels).sum().item()
             accuracy = correct / len(true_labels) * 100
 
-        metrics = {"accuracy": accuracy}
+        metrics = {"accuracy": accuracy, "loss": loss.item()}
         return parameters_aggregated, metrics
 
     def aggregate_evaluate(
@@ -113,5 +114,5 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
         results,
         failures,
     ):
-        print("CHIAMATA AGGREGATE_EVALUATE CI SI PO FA QUALCOSA")
-        return None, {}
+        metrics = {}
+        return None, metrics
