@@ -38,7 +38,13 @@ def horizontal_simulation(cfg: DictConfig):
         strategy=strategy,
         client_resources={"num_cpus": sim_cfg.num_cpus, "num_gpus": sim_cfg.num_gpus},
     )
-    plot_simulation(history)
+    plot_simulation(
+        history,
+        dir_name=f"{data_cfg.dataset}-horizontal",
+        num_clients=data_cfg.num_clients,
+        lr=train_cfg.optimizer.lr,
+        hybrid_ratio=data_cfg.hybrid_ratio,
+    )
 
 
 def vertical_simulation(cfg: DictConfig):
@@ -79,10 +85,16 @@ def vertical_simulation(cfg: DictConfig):
         strategy=strategy,
         client_resources={"num_cpus": sim_cfg.num_cpus, "num_gpus": sim_cfg.num_gpus},
     )
-    plot_simulation(history)
+    plot_simulation(
+        history,
+        dir_name=f"{data_cfg.dataset}-vertical",
+        num_clients=data_cfg.num_clients,
+        lr=train_cfg.optimizer.lr,
+        hybrid_ratio=data_cfg.hybrid_ratio,
+    )
 
 
-@hydra.main(config_path="conf", config_name="har")
+@hydra.main(config_path="conf", config_name="femnist")
 def main(cfg: DictConfig):
     if cfg.partitioning == "horizontal":
         horizontal_simulation(cfg)
