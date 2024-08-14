@@ -66,7 +66,7 @@ class HarModel(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
 
-        out = F.softmax(self.fc4(x), dim=1)
+        out = F.log_softmax(self.fc4(x), dim=1)
         return out
 
 
@@ -116,7 +116,7 @@ class FullVerticalModel(nn.Module):
         return self.server_model(embeddings_aggregated)
 
 
-def get_proper_model(num_classes: int, dataset: str, is_vertical: bool = False):
+def get_proper_model(num_classes: int, dataset: str):
     if dataset == "femnist":
         return CnnEmnist(num_classes)
     elif dataset == "har":

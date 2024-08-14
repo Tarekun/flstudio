@@ -97,14 +97,15 @@ def get_horizontal_client_generator(
 def get_vertical_client_generator(
     train_cfg: DictConfig, num_clients: int, client_models, train_loader
 ):
-    def client_generator(cid: str):
-        return VerticalClient(
-            int(cid),
-            561,  # TODO: find a better way of setting this
-            num_clients,
-            client_models[int(cid)],
-            train_loader,
-            train_cfg,
-        ).to_client()
+    pass
+    # def client_generator(cid: str):
+    #     return VerticalClient(
+    #         int(cid),
+    #         561,  # TODO: find a better way of setting this
+    #         num_clients,
+    #         client_models[int(cid)],
+    #         train_loader,
+    #         train_cfg,
+    #     ).to_client()
 
-    return client_generator
+    # return client_generator

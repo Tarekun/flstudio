@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from omegaconf import DictConfig
-from models import get_proper_model, FullVerticalModel
+from models import get_proper_model
 from collections import OrderedDict
 import hydra
 
@@ -38,14 +38,8 @@ def validate(model: nn.Module, val_loader, train_cfg: DictConfig):
 
 
 def train(model: nn.Module, train_loader, train_cfg: DictConfig, val_loader=None):
-    optimizer = torch.optim.SGD(
-        lr=train_cfg.optimizer.lr,
-        momentum=train_cfg.optimizer.momentum,
-        params=model.parameters(),
-    )
-    criterion = torch.nn.CrossEntropyLoss()
-    # optimizer = hydra.utils.instantiate(train_cfg.optimizer, params=model.parameters())
-    # criterion = hydra.utils.instantiate(train_cfg.loss_fn)
+    optimizer = hydra.utils.instantiate(train_cfg.optimizer, params=model.parameters())
+    criterion = hydra.utils.instantiate(train_cfg.loss_fn)
     model.to(device)
 
     for epoch in range(train_cfg.epochs):
@@ -65,9 +59,9 @@ def train(model: nn.Module, train_loader, train_cfg: DictConfig, val_loader=None
 
             running_loss += loss.item()
 
-        print(
-            f"Epoch [{epoch+1}/{train_cfg.epochs}], Loss: {running_loss/len(train_loader):.4f}"
-        )
+        # print(
+        #     f"Epoch [{epoch+1}/{train_cfg.epochs}], Loss: {running_loss/len(train_loader):.2f}"
+        # )
         if val_loader:
             validate(model, val_loader)
 
@@ -76,8 +70,7 @@ def evaluate_model(model: nn.Module, test_loader, train_cfg: DictConfig) -> floa
     correct = 0
     total = 0
     total_loss = 0.0
-    # criterion = hydra.utils.instantiate(train_cfg.loss_fn)
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = hydra.utils.instantiate(train_cfg.loss_fn)
     # Put the model in evaluation mode ??
     model.eval()
     model.to(device)
@@ -133,9 +126,10 @@ def get_vertical_evaluation_fn(
     test_loader,
     train_cfg,
 ):
-    def evaluation_fn(server_round, parameters, config):
-        full_model = FullVerticalModel(client_models, server_model, num_clients)
-        loss, accuracy = evaluate_model(full_model, test_loader, train_cfg)
-        return loss, {"accuracy": accuracy, "loss": loss.item()}
+    pass
+    # def evaluation_fn(server_round, parameters, config):
+    #     full_model = FullVerticalModel(client_models, server_model, num_clients)
+    #     loss, accuracy = evaluate_model(full_model, test_loader, train_cfg)
+    #     return loss, {"accuracy": accuracy, "loss": loss.item()}
 
-    return evaluation_fn
+    # return evaluation_fn

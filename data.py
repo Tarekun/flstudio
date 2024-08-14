@@ -62,7 +62,7 @@ class HarDataset(Dataset):
 
         if len(self.x) != len(self.y):
             raise Exception(
-                "Problem with data files: x [{len(self.x)}] and y [{len(self.y)}] length should be the same"
+                f"Problem with data files: x [{len(self.x)}] and y [{len(self.y)}] length should be the same"
             )
 
     def __getitem__(self, index):
@@ -137,15 +137,11 @@ def _get_har_datasets(
     full_trainset = HarDataset(train=True)
     full_testset = HarDataset(train=False)
 
-    def partition_horizontally():
-        train_size = len(full_trainset)
-        train_sizes = [train_size // num_clients] * num_clients
-        # TODO: remainder is fully added the the first client
-        train_sizes[0] += len(full_trainset) % num_clients
+    train_size = len(full_trainset)
+    train_sizes = [train_size // num_clients] * num_clients
+    train_sizes[0] += train_size % num_clients
 
-        return random_split(full_trainset, train_sizes)
-
-    train_splits = partition_horizontally()
+    train_splits = random_split(full_trainset, train_sizes)
     # this dataset is already split into 70% train and 30% test, no validation used
     return train_splits, full_testset
 
@@ -207,20 +203,21 @@ def get_horizontal_dataloaders(
 
 
 def get_vertical_dataloaders(data_cfg: DictConfig) -> tuple[DataLoader, DataLoader]:
-    if data_cfg.dataset != "har":
-        raise ValueError(
-            f"Only vertical supported dataset is HAR, requested was: {data_cfg.dataset}"
-        )
+    pass
+    # if data_cfg.dataset != "har":
+    #     raise ValueError(
+    #         f"Only vertical supported dataset is HAR, requested was: {data_cfg.dataset}"
+    #     )
 
-    train_set = HarDataset(train=True)
-    test_set = HarDataset(train=False)
+    # train_set = HarDataset(train=True)
+    # test_set = HarDataset(train=False)
 
-    # process the whole training set in one batch as the output of local models
-    # will be an embedding used as input for the server model, which will be the one
-    # compute the gradient's for both local and global model
-    return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
-        test_set, batch_size=len(test_set), shuffle=False
-    )
+    # # process the whole training set in one batch as the output of local models
+    # # will be an embedding used as input for the server model, which will be the one
+    # # compute the gradient's for both local and global model
+    # return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
+    #     test_set, batch_size=len(test_set), shuffle=False
+    # )
 
 
 def extract_features(full_features, num_clients, cid):
