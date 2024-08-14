@@ -38,8 +38,14 @@ def validate(model: nn.Module, val_loader, train_cfg: DictConfig):
 
 
 def train(model: nn.Module, train_loader, train_cfg: DictConfig, val_loader=None):
-    optimizer = hydra.utils.instantiate(train_cfg.optimizer, params=model.parameters())
-    criterion = hydra.utils.instantiate(train_cfg.loss_fn)
+    optimizer = torch.optim.SGD(
+        lr=train_cfg.optimizer.lr,
+        momentum=train_cfg.optimizer.momentum,
+        params=model.parameters(),
+    )
+    criterion = torch.nn.CrossEntropyLoss()
+    # optimizer = hydra.utils.instantiate(train_cfg.optimizer, params=model.parameters())
+    # criterion = hydra.utils.instantiate(train_cfg.loss_fn)
     model.to(device)
 
     for epoch in range(train_cfg.epochs):
@@ -70,7 +76,8 @@ def evaluate_model(model: nn.Module, test_loader, train_cfg: DictConfig) -> floa
     correct = 0
     total = 0
     total_loss = 0.0
-    criterion = hydra.utils.instantiate(train_cfg.loss_fn)
+    # criterion = hydra.utils.instantiate(train_cfg.loss_fn)
+    criterion = torch.nn.CrossEntropyLoss()
     # Put the model in evaluation mode ??
     model.eval()
     model.to(device)
@@ -92,9 +99,15 @@ def evaluate_model(model: nn.Module, test_loader, train_cfg: DictConfig) -> floa
                 else labels
             )
             correct += (predicted == labels_indices).sum().item()
+            print(
+                f"\tin this batch: {len(labels)} elements, {len(labels_indices)} indices, {correct} predicted"
+            )
+            print(f"\t{outputs}")
 
     accuracy = correct / total
-    print(f"Evaluation accuracy on the test dataset: {100 * accuracy:.2f}%")
+    print(
+        f"\tEvaluation accuracy on the test dataset: {100 * accuracy:.2f}% [c:{correct} t:{total}]"
+    )
     return total_loss, accuracy
 
 

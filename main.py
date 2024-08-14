@@ -1,5 +1,5 @@
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 import flwr as fl
 from flwr.server.strategy import FedAvg
 from flwr.simulation import start_simulation
@@ -96,6 +96,9 @@ def vertical_simulation(cfg: DictConfig):
 
 @hydra.main(config_path="conf", config_name="femnist", version_base="1.2")
 def main(cfg: DictConfig):
+    print("Starting simulation with the following config:")
+    print(OmegaConf.to_yaml(cfg))
+
     if cfg.partitioning == "horizontal":
         horizontal_simulation(cfg)
     elif cfg.partitioning == "vertical":

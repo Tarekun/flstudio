@@ -42,7 +42,7 @@ def create_single_plot(filename: str, rounds, losses, accuracies):
     # Plotting losses
     ax1.set_xlabel("Round")
     ax1.set_ylabel("Loss", color="red")
-    ax1.plot(rounds, losses, marker="o", color="red", label="Loss")
+    ax1.plot(rounds, losses, color="red", label="Loss")
     ax1.tick_params(axis="y", labelcolor="red")
 
     # Creating second y-axis for accuracy

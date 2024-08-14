@@ -1,7 +1,7 @@
 defaults:
   - _self_
 
-partitioning: vertical
+partitioning: horizontal
 
 sim_cfg:
   num_rounds: 2
