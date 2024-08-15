@@ -94,7 +94,7 @@ def vertical_simulation(cfg: DictConfig):
     )
 
 
-@hydra.main(config_path="conf", config_name="femnist", version_base="1.2")
+@hydra.main(config_path="conf", config_name="har", version_base="1.2")
 def main(cfg: DictConfig):
     print("Starting simulation with the following config:")
     print(OmegaConf.to_yaml(cfg))

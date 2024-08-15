@@ -53,7 +53,7 @@ class CnnEmnist(nn.Module):
         x = self.fc2(x)
 
         # final layer uses softmax as this is a classification problem
-        out = F.softmax(self.fc3(x), dim=1)
+        out = F.log_softmax(self.fc3(x), dim=1)
         return out
 
 
