@@ -59,9 +59,9 @@ def train(model: nn.Module, train_loader, train_cfg: DictConfig, val_loader=None
 
             running_loss += loss.item()
 
-        print(
-            f"Epoch [{epoch+1}/{train_cfg.epochs}], Loss: {running_loss/len(train_loader):.4f}"
-        )
+        # print(
+        #     f"Epoch [{epoch+1}/{train_cfg.epochs}], Loss: {running_loss/len(train_loader):.2f}"
+        # )
         if val_loader:
             validate(model, val_loader)
 
@@ -94,7 +94,7 @@ def evaluate_model(model: nn.Module, test_loader, train_cfg: DictConfig) -> floa
             correct += (predicted == labels_indices).sum().item()
 
     accuracy = correct / total
-    print(f"Evaluation accuracy on the test dataset: {100 * accuracy:.2f}%")
+    print(f"\tEvaluation accuracy on the test dataset: {100 * accuracy:.2f}%")
     return total_loss, accuracy
 
 

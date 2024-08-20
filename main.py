@@ -1,13 +1,16 @@
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 import flwr as fl
 from flwr.server.strategy import FedAvg
 from flwr.simulation import start_simulation
 
 from data import get_horizontal_dataloaders, get_vertical_dataloaders
 from client import get_horizontal_client_generator, get_vertical_client_generator
-from training import get_horizontal_evaluation_fn, get_vertical_evaluation_fn
+from training import get_horizontal_evaluation_fn
 from visualization import plot_simulation
+from strategy import *
+from models import *
+
 from strategy import *
 from models import *
 
@@ -72,8 +75,8 @@ def vertical_simulation(cfg: DictConfig):
 
     strategy = VerticalFedAvg(
         data_cfg.num_clients,
-        num_classes,
         server_model,
+        client_models,
         train_loader,
         train_cfg,
         evaluate_fn=evaluate_fn,
@@ -87,15 +90,16 @@ def vertical_simulation(cfg: DictConfig):
     )
     plot_simulation(
         history,
+        cfg,
         dir_name=f"{data_cfg.dataset}-vertical",
-        num_clients=data_cfg.num_clients,
-        lr=train_cfg.optimizer.lr,
-        hybrid_ratio=data_cfg.hybrid_ratio,
     )
 
 
-@hydra.main(config_path="conf", config_name="femnist")
+@hydra.main(config_path="conf", config_name="har", version_base="1.2")
 def main(cfg: DictConfig):
+    print("Starting simulation with the following config:")
+    print(OmegaConf.to_yaml(cfg))
+
     if cfg.partitioning == "horizontal":
         horizontal_simulation(cfg)
     elif cfg.partitioning == "vertical":

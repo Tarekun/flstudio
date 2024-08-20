@@ -30,8 +30,8 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
     def __init__(
         self,
         num_clients: int,
-        num_classes: int,
         server_model: nn.Module,
+        client_models: list[nn.Module],
         train_loader,
         train_cfg,
         *,
@@ -63,9 +63,10 @@ class VerticalFedAvg(fl.server.strategy.FedAvg):
             evaluate_metrics_aggregation_fn=evaluate_metrics_aggregation_fn,
         )
         self.server_model = server_model
-        # TODO: am i supposed to only use server_model.parameters or should i consider clients' ones too?
+        models = [server_model] + client_models
         self.optimizer = hydra.utils.instantiate(
-            train_cfg.optimizer, params=server_model.parameters()
+            train_cfg.optimizer,
+            params=[params for model in models for params in model.parameters()],
         )
         self.criterion = hydra.utils.instantiate(train_cfg.loss_fn)
         self.train_loader = train_loader

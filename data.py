@@ -62,7 +62,7 @@ class HarDataset(Dataset):
 
         if len(self.x) != len(self.y):
             raise Exception(
-                "Problem with data files: x [{len(self.x)}] and y [{len(self.y)}] length should be the same"
+                f"Problem with data files: x [{len(self.x)}] and y [{len(self.y)}] length should be the same"
             )
 
     def __getitem__(self, index):
@@ -137,15 +137,11 @@ def _get_har_datasets(
     full_trainset = HarDataset(train=True)
     full_testset = HarDataset(train=False)
 
-    def partition_horizontally():
-        train_size = len(full_trainset)
-        train_sizes = [train_size // num_clients] * num_clients
-        # TODO: remainder is fully added the the first client
-        train_sizes[0] += len(full_trainset) % num_clients
+    train_size = len(full_trainset)
+    train_sizes = [train_size // num_clients] * num_clients
+    train_sizes[0] += train_size % num_clients
 
-        return random_split(full_trainset, train_sizes)
-
-    train_splits = partition_horizontally()
+    train_splits = random_split(full_trainset, train_sizes)
     # this dataset is already split into 70% train and 30% test, no validation used
     return train_splits, full_testset
 
