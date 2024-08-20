@@ -16,6 +16,7 @@ def _format_filename(cfg: DictConfig):
     name += f"-c{cfg.data_cfg.num_clients}"
     name += f"-h{cfg.data_cfg.hybrid_ratio}"
     name += f"-lr{cfg.train_cfg.optimizer.lr}"
+    name += f"-e{cfg.train_cfg.epochs}"
     name += f"-{cfg.train_cfg.optimizer._target_}"
 
     name = name.replace(".", "_")
