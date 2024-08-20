@@ -4,15 +4,15 @@ import flwr as fl
 from flwr.server.strategy import FedAvg
 from flwr.simulation import start_simulation
 
-from data import get_horizontal_dataloaders
-from client import get_horizontal_client_generator
+from data import get_horizontal_dataloaders, get_vertical_dataloaders
+from client import get_horizontal_client_generator, get_vertical_client_generator
 from training import get_horizontal_evaluation_fn
 from visualization import plot_simulation
 from strategy import *
 from models import *
 
-# from strategy import *
-# from models import *
+from strategy import *
+from models import *
 
 
 def horizontal_simulation(cfg: DictConfig):
@@ -43,7 +43,7 @@ def horizontal_simulation(cfg: DictConfig):
     )
     plot_simulation(
         history,
-        dir_name=f"{data_cfg.dataset}-horizontal/t",
+        dir_name=f"{data_cfg.dataset}-horizontal",
         num_clients=data_cfg.num_clients,
         lr=train_cfg.optimizer.lr,
         hybrid_ratio=data_cfg.hybrid_ratio,
@@ -51,51 +51,48 @@ def horizontal_simulation(cfg: DictConfig):
 
 
 def vertical_simulation(cfg: DictConfig):
-    pass
-    # sim_cfg, train_cfg, data_cfg = cfg.sim_cfg, cfg.train_cfg, cfg.data_cfg
-    # num_classes = data_cfg.num_classes
+    sim_cfg, train_cfg, data_cfg = cfg.sim_cfg, cfg.train_cfg, cfg.data_cfg
+    num_classes = data_cfg.num_classes
 
-    # num_features = 561  # TODO: find a better way of setting this
-    # features_per_client = num_features // data_cfg.num_clients
-    # remainder = num_features % data_cfg.num_clients
+    num_features = 561  # TODO: find a better way of setting this
+    features_per_client = num_features // data_cfg.num_clients
+    remainder = num_features % data_cfg.num_clients
 
-    # client_models = [
-    #     ClientVerticalModel(features_per_client)
-    #     for _ in range(data_cfg.num_clients - 1)
-    # ]
-    # client_models.append(ClientVerticalModel(features_per_client + remainder))
-    # server_model = ServerVerticalModel(data_cfg.num_clients, num_classes)
+    client_models = [
+        ClientVerticalModel(features_per_client)
+        for _ in range(data_cfg.num_clients - 1)
+    ]
+    client_models.append(ClientVerticalModel(features_per_client + remainder))
+    server_model = ServerVerticalModel(data_cfg.num_clients, num_classes)
 
-    # train_loader, test_loader = get_vertical_dataloaders(data_cfg)
-    # client_fn = get_vertical_client_generator(
-    #     train_cfg, data_cfg.num_clients, client_models, train_loader
-    # )
-    # evaluate_fn = get_vertical_evaluation_fn(
-    #     client_models, server_model, data_cfg.num_clients, test_loader, train_cfg
-    # )
+    train_loader, test_loader = get_vertical_dataloaders(data_cfg)
+    client_fn = get_vertical_client_generator(
+        train_cfg, data_cfg.num_clients, client_models, train_loader
+    )
+    evaluate_fn = get_vertical_evaluation_fn(
+        client_models, server_model, data_cfg.num_clients, test_loader, train_cfg
+    )
 
-    # strategy = VerticalFedAvg(
-    #     data_cfg.num_clients,
-    #     num_classes,
-    #     server_model,
-    #     train_loader,
-    #     train_cfg,
-    #     evaluate_fn=evaluate_fn,
-    # )
-    # history = start_simulation(
-    #     client_fn=client_fn,
-    #     num_clients=data_cfg.num_clients,
-    #     config=fl.server.ServerConfig(num_rounds=sim_cfg.num_rounds),
-    #     strategy=strategy,
-    #     client_resources={"num_cpus": sim_cfg.num_cpus, "num_gpus": sim_cfg.num_gpus},
-    # )
-    # plot_simulation(
-    #     history,
-    #     dir_name=f"{data_cfg.dataset}-vertical",
-    #     num_clients=data_cfg.num_clients,
-    #     lr=train_cfg.optimizer.lr,
-    #     hybrid_ratio=data_cfg.hybrid_ratio,
-    # )
+    strategy = VerticalFedAvg(
+        data_cfg.num_clients,
+        server_model,
+        client_models,
+        train_loader,
+        train_cfg,
+        evaluate_fn=evaluate_fn,
+    )
+    history = start_simulation(
+        client_fn=client_fn,
+        num_clients=data_cfg.num_clients,
+        config=fl.server.ServerConfig(num_rounds=sim_cfg.num_rounds),
+        strategy=strategy,
+        client_resources={"num_cpus": sim_cfg.num_cpus, "num_gpus": sim_cfg.num_gpus},
+    )
+    plot_simulation(
+        history,
+        cfg,
+        dir_name=f"{data_cfg.dataset}-vertical",
+    )
 
 
 @hydra.main(config_path="conf", config_name="har", version_base="1.2")

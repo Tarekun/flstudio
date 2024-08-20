@@ -203,21 +203,20 @@ def get_horizontal_dataloaders(
 
 
 def get_vertical_dataloaders(data_cfg: DictConfig) -> tuple[DataLoader, DataLoader]:
-    pass
-    # if data_cfg.dataset != "har":
-    #     raise ValueError(
-    #         f"Only vertical supported dataset is HAR, requested was: {data_cfg.dataset}"
-    #     )
+    if data_cfg.dataset != "har":
+        raise ValueError(
+            f"Only vertical supported dataset is HAR, requested was: {data_cfg.dataset}"
+        )
 
-    # train_set = HarDataset(train=True)
-    # test_set = HarDataset(train=False)
+    train_set = HarDataset(train=True)
+    test_set = HarDataset(train=False)
 
-    # # process the whole training set in one batch as the output of local models
-    # # will be an embedding used as input for the server model, which will be the one
-    # # compute the gradient's for both local and global model
-    # return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
-    #     test_set, batch_size=len(test_set), shuffle=False
-    # )
+    # process the whole training set in one batch as the output of local models
+    # will be an embedding used as input for the server model, which will be the one
+    # compute the gradient's for both local and global model
+    return DataLoader(train_set, batch_size=len(train_set), shuffle=True), DataLoader(
+        test_set, batch_size=len(test_set), shuffle=False
+    )
 
 
 def extract_features(full_features, num_clients, cid):

@@ -90,7 +90,7 @@ class ServerVerticalModel(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.input(x))
-        out = F.softmax(self.output(x))
+        out = F.log_softmax(self.output(x), dim=1)
         return out
 
 

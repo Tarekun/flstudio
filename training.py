@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from omegaconf import DictConfig
-from models import get_proper_model
+from models import get_proper_model, FullVerticalModel
 from collections import OrderedDict
 import hydra
 
@@ -92,15 +92,9 @@ def evaluate_model(model: nn.Module, test_loader, train_cfg: DictConfig) -> floa
                 else labels
             )
             correct += (predicted == labels_indices).sum().item()
-            print(
-                f"\tin this batch: {len(labels)} elements, {len(labels_indices)} indices, {correct} predicted"
-            )
-            print(f"\t{outputs}")
 
     accuracy = correct / total
-    print(
-        f"\tEvaluation accuracy on the test dataset: {100 * accuracy:.2f}% [c:{correct} t:{total}]"
-    )
+    print(f"\tEvaluation accuracy on the test dataset: {100 * accuracy:.2f}%")
     return total_loss, accuracy
 
 
@@ -126,10 +120,9 @@ def get_vertical_evaluation_fn(
     test_loader,
     train_cfg,
 ):
-    pass
-    # def evaluation_fn(server_round, parameters, config):
-    #     full_model = FullVerticalModel(client_models, server_model, num_clients)
-    #     loss, accuracy = evaluate_model(full_model, test_loader, train_cfg)
-    #     return loss, {"accuracy": accuracy, "loss": loss.item()}
+    def evaluation_fn(server_round, parameters, config):
+        full_model = FullVerticalModel(client_models, server_model, num_clients)
+        loss, accuracy = evaluate_model(full_model, test_loader, train_cfg)
+        return loss, {"accuracy": accuracy, "loss": loss.item()}
 
-    # return evaluation_fn
+    return evaluation_fn
