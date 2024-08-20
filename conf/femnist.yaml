@@ -9,7 +9,7 @@ sim_cfg:
   num_gpus: 0.0
 
 train_cfg:
-  epochs: 3
+  epochs: 6
   optimizer:
     _target_: torch.optim.SGD
     lr: 0.01
@@ -18,8 +18,8 @@ train_cfg:
     _target_: torch.nn.CrossEntropyLoss
 
 data_cfg:
-  num_clients: 200
-  hybrid_ratio: 0.1
+  num_clients: 150
+  hybrid_ratio: 0.0
   batch_size: 32
   val_ratio: 0.0
   test_ratio: 0.1
