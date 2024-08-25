@@ -92,7 +92,7 @@ def _split_dataset(dataset, val_ratio: float, test_ratio: float):
     return train_subset, val_subset, test_subset
 
 
-def _probabilistic_split(dataset, num_subsets, num_classes, bias_factor=1.0):
+def _biased_split(dataset, num_subsets, num_classes, bias_factor=0.0):
     def sort_by_class(dataset, num_classes):
         sorted_dataset = [[] for _ in range(num_classes)]
         for idx, (_, label) in enumerate(dataset):
@@ -107,11 +107,16 @@ def _probabilistic_split(dataset, num_subsets, num_classes, bias_factor=1.0):
     subsets = [[] for _ in range(num_subsets)]
 
     for i in range(num_subsets):
+        percentage_position = i / num_subsets
+        dominant_class = int(percentage_position * num_classes)
         class_weights = np.array(
-            [np.exp(-0.5 * abs(i - label)) for label in range(num_classes)]
+            [
+                np.exp(-bias_factor * abs(dominant_class - label))
+                for label in range(num_classes)
+            ]
         )
         # apply bias factor to skew the distribution more
-        class_weights = class_weights**bias_factor
+        # class_weights = class_weights**bias_factor
         # normalize in [0,1] to get valid probabilities
         class_weights /= class_weights.sum()
 
@@ -171,6 +176,7 @@ def _get_femnist_datasets(
 
 def _get_har_datasets(
     num_clients: int,
+    bias_factor: float,
 ) -> tuple[list[Dataset], Dataset]:
     """Retrieves the HAR dataset. It returns a 2 element tuple containing:
     - the list of training sets partitioned per client
@@ -185,7 +191,7 @@ def _get_har_datasets(
 
     # train_splits = random_split(full_trainset, train_sizes)
     # TODO: hardcoded class number aint cool
-    train_splits = _probabilistic_split(full_trainset, num_clients, 6, bias_factor=30)
+    train_splits = _biased_split(full_trainset, num_clients, 6, bias_factor=bias_factor)
     # this dataset is already split into 70% train and 30% test, no validation used
     return train_splits, full_testset
 
@@ -209,7 +215,7 @@ def _get_datasets(
 
     elif data_cfg.dataset == "har":
         train_sets, test_set = _get_har_datasets(
-            data_cfg.num_clients,
+            data_cfg.num_clients, data_cfg.get("bias_factor", 0.0)
         )
         return train_sets, [], test_set
 
