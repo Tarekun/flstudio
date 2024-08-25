@@ -111,6 +111,9 @@ def _biased_split(dataset, num_subsets, num_classes, bias_factor=0.0):
         dominant_class = int(percentage_position * num_classes)
         class_weights = np.array(
             [
+                # class probability in function of the distance from the dominant_class
+                # computed as: e ^ (-b * |dc - label|)
+                # where b is the given bias factor and dc is the dominant class
                 np.exp(-bias_factor * abs(dominant_class - label))
                 for label in range(num_classes)
             ]
@@ -176,6 +179,7 @@ def _get_femnist_datasets(
 
 def _get_har_datasets(
     num_clients: int,
+    num_classes: int,
     bias_factor: float,
 ) -> tuple[list[Dataset], Dataset]:
     """Retrieves the HAR dataset. It returns a 2 element tuple containing:
@@ -189,9 +193,9 @@ def _get_har_datasets(
     train_sizes = [train_size // num_clients] * num_clients
     train_sizes[0] += train_size % num_clients
 
-    # train_splits = random_split(full_trainset, train_sizes)
-    # TODO: hardcoded class number aint cool
-    train_splits = _biased_split(full_trainset, num_clients, 6, bias_factor=bias_factor)
+    train_splits = _biased_split(
+        full_trainset, num_clients, num_classes, bias_factor=bias_factor
+    )
     # this dataset is already split into 70% train and 30% test, no validation used
     return train_splits, full_testset
 
@@ -215,7 +219,7 @@ def _get_datasets(
 
     elif data_cfg.dataset == "har":
         train_sets, test_set = _get_har_datasets(
-            data_cfg.num_clients, data_cfg.get("bias_factor", 0.0)
+            data_cfg.num_clients, data_cfg.num_classes, data_cfg.get("bias_factor", 0.0)
         )
         return train_sets, [], test_set
 
