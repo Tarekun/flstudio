@@ -227,12 +227,48 @@ def _get_datasets(
         raise ValueError(f"Unsupported dataset: {data_cfg.dataset}")
 
 
-def _centralize_trainsets(train_sets, num_clients, hybrid_ratio):
-    num_centralized = int(hybrid_ratio * num_clients)
-    if num_centralized > 0:
-        train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
-            num_centralized:
-        ]
+def _centralize_trainsets(train_sets, num_clients, hybrid_ratio, hybrid_method: str):
+    if hybrid_method == "unify":
+        # this method collapses the first num_centralized datasets into one
+        num_centralized = int(hybrid_ratio * num_clients)
+        if num_centralized > 0:
+            train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
+                num_centralized:
+            ]
+
+    elif hybrid_method == "share":
+        # this method copies num_shared samples in a collective dataset
+        shared_sets = []
+        for train_set in train_sets:
+            set_size = len(train_set)
+            num_shared = int(hybrid_ratio * set_size)
+            if num_shared > 0:
+                # ignore the unshared part as we do not change local datasets here
+                shared_set, _ = random_split(
+                    train_set, [num_shared, set_size - num_shared]
+                )
+                shared_sets.append(shared_set)
+        if len(shared_sets) > 0:
+            train_sets = train_sets + [ConcatDataset(shared_sets)]
+
+    elif hybrid_method == "share-disjoint":
+        # this method removes num_shared samples from clients and puts them in the collective
+        shared_sets = []
+        client_sets = []
+        for train_set in train_sets:
+            set_size = len(train_set)
+            num_shared = int(hybrid_ratio * set_size)
+            if num_shared > 0:
+                shared_set, unshared_set = random_split(
+                    train_set, [num_shared, set_size - num_shared]
+                )
+                shared_sets.append(shared_set)
+                client_sets.append(unshared_set)
+            else:
+                # dont lose clients sets!
+                client_sets.append(train_set)
+        if len(shared_sets) > 0:
+            train_sets = client_sets + [ConcatDataset(shared_sets)]
 
     return train_sets
 
@@ -244,7 +280,7 @@ def get_horizontal_dataloaders(
 
     train_sets, _, test_set = _get_datasets(data_cfg)
     train_sets = _centralize_trainsets(
-        train_sets, data_cfg.hybrid_ratio, data_cfg.num_clients
+        train_sets, data_cfg.hybrid_ratio, data_cfg.num_clients, data_cfg.hybrid_method
     )
 
     train_loaders = [

@@ -16,6 +16,7 @@ def _format_filename(cfg: DictConfig):
     bias_factor = cfg.data_cfg.get("bias_factor", 0.0)
     name += f"-c{cfg.data_cfg.num_clients}"
     name += f"-h{cfg.data_cfg.hybrid_ratio}"
+    name += f"-hm_{cfg.data_cfg.hybrid_method}"
     name += f"-b{bias_factor}"
     name += f"-lr{cfg.train_cfg.optimizer.lr}"
     name += f"-e{cfg.train_cfg.epochs}"
