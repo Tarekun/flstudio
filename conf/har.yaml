@@ -1,7 +1,7 @@
 defaults:
   - _self_
 
-partitioning: vertical
+partitioning: horizontal
 
 sim_cfg:
   num_rounds: 20
@@ -9,23 +9,24 @@ sim_cfg:
   num_gpus: 0.0
 
 train_cfg:
-  epochs: 64
+  epochs: 8
   optimizer:
-    _target_: torch.optim.Adam
+    _target_: torch.optim.SGD
     lr: 0.01
-    # momentum: 0.9
+    momentum: 0.9
   loss_fn:
     _target_: torch.nn.CrossEntropyLoss
 
 data_cfg:
-  num_clients: 3
+  num_clients: 49
   hybrid_ratio: 0.0
+  bias_factor: 2.0
   batch_size: 32
   dataset: har
   num_classes: 6
 
 hydra:
-  mode: MULTIRUN
+  # mode: MULTIRUN
   sweeper:
     params:
       train_cfg.optimizer.lr: 0.001, 0.01, 0.1

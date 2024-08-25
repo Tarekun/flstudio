@@ -8,7 +8,7 @@ kernels = [3, 3, 3]
 first_linear_size = featmaps[2] * kernels[2] * kernels[2]
 linears = [512, 256, 62]
 
-latent_vector_length = 100
+latent_vector_length = 20
 
 
 class CnnEmnist(nn.Module):

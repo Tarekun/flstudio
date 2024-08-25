@@ -1,9 +1,10 @@
 import h5py
 import torch
 from torchvision import datasets, transforms
-from torch.utils.data import ConcatDataset, Dataset, DataLoader, random_split
+from torch.utils.data import ConcatDataset, Dataset, DataLoader, Subset, random_split
 import numpy as np
 from omegaconf import DictConfig
+import random
 
 femnist_transform = transforms.Compose(
     [
@@ -91,6 +92,55 @@ def _split_dataset(dataset, val_ratio: float, test_ratio: float):
     return train_subset, val_subset, test_subset
 
 
+def _biased_split(dataset, num_subsets, num_classes, bias_factor=0.0):
+    def sort_by_class(dataset, num_classes):
+        sorted_dataset = [[] for _ in range(num_classes)]
+        for idx, (_, label) in enumerate(dataset):
+            # assuming one-hot encoded labels
+            class_index = torch.argmax(label).item()
+            sorted_dataset[class_index].append(idx)
+        return sorted_dataset
+
+    sorted_dataset = sort_by_class(dataset, num_classes)
+    subset_size = len(dataset) // num_subsets
+    # stores sample indices for each subset
+    subsets = [[] for _ in range(num_subsets)]
+
+    for i in range(num_subsets):
+        percentage_position = i / num_subsets
+        dominant_class = int(percentage_position * num_classes)
+        class_weights = np.array(
+            [
+                # class probability in function of the distance from the dominant_class
+                # computed as: e ^ (-b * |dc - label|)
+                # where b is the given bias factor and dc is the dominant class
+                np.exp(-bias_factor * abs(dominant_class - label))
+                for label in range(num_classes)
+            ]
+        )
+        # apply bias factor to skew the distribution more
+        # class_weights = class_weights**bias_factor
+        # normalize in [0,1] to get valid probabilities
+        class_weights /= class_weights.sum()
+
+        for _ in range(subset_size):
+            # randomly choose a class based on the current distribution
+            chosen_class = np.random.choice(range(num_classes), p=class_weights)
+            if sorted_dataset[chosen_class]:
+                sample_index = random.choice(sorted_dataset[chosen_class])
+                subsets[i].append(sample_index)
+                sorted_dataset[chosen_class].remove(sample_index)
+
+    remaining_indices = [
+        sample_idx for class_samples in sorted_dataset for sample_idx in class_samples
+    ]
+    for i, idx in enumerate(remaining_indices):
+        subsets[i % num_subsets].append(idx)
+
+    subset_datasets = [Subset(dataset, indices) for indices in subsets]
+    return subset_datasets
+
+
 def _get_femnist_datasets(
     num_writers: int,
     val_ratio: float,
@@ -129,6 +179,8 @@ def _get_femnist_datasets(
 
 def _get_har_datasets(
     num_clients: int,
+    num_classes: int,
+    bias_factor: float,
 ) -> tuple[list[Dataset], Dataset]:
     """Retrieves the HAR dataset. It returns a 2 element tuple containing:
     - the list of training sets partitioned per client
@@ -141,7 +193,9 @@ def _get_har_datasets(
     train_sizes = [train_size // num_clients] * num_clients
     train_sizes[0] += train_size % num_clients
 
-    train_splits = random_split(full_trainset, train_sizes)
+    train_splits = _biased_split(
+        full_trainset, num_clients, num_classes, bias_factor=bias_factor
+    )
     # this dataset is already split into 70% train and 30% test, no validation used
     return train_splits, full_testset
 
@@ -165,7 +219,7 @@ def _get_datasets(
 
     elif data_cfg.dataset == "har":
         train_sets, test_set = _get_har_datasets(
-            data_cfg.num_clients,
+            data_cfg.num_clients, data_cfg.num_classes, data_cfg.get("bias_factor", 0.0)
         )
         return train_sets, [], test_set
 

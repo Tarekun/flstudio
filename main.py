@@ -43,10 +43,8 @@ def horizontal_simulation(cfg: DictConfig):
     )
     plot_simulation(
         history,
+        cfg,
         dir_name=f"{data_cfg.dataset}-horizontal",
-        num_clients=data_cfg.num_clients,
-        lr=train_cfg.optimizer.lr,
-        hybrid_ratio=data_cfg.hybrid_ratio,
     )
 
 
