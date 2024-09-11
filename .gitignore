@@ -9,3 +9,10 @@ outputs/
 multirun/
 
 plots/
+thesis/thesis.aux
+thesis/thesis.bbl
+thesis/thesis.blg
+thesis/thesis.log
+thesis/thesis.out
+thesis/thesis.run.xml
+thesis/thesis.toc

@@ -7,5 +7,27 @@
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.tabSize": 4,
     "editor.formatOnSave": true
-  }
+  },
+  "latex-workshop.latex.tools": [
+      {
+          "name": "pdflatex -> biber -> pdflatex*2",
+          "tools": [
+              "pdflatex",
+              "biber",
+              "pdflatex",
+              "pdflatex"
+          ]
+      }
+  ],
+  "latex-workshop.latex.recipes": [
+      {
+          "name": "pdflatex -> biber -> pdflatex*2",
+          "tools": [
+              "pdflatex",
+              "biber",
+              "pdflatex",
+              "pdflatex"
+          ]
+      }
+  ]
 }

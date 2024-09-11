@@ -1,0 +1,289 @@
+\chapter{Federated Learning}
+In questa sezione viene introdotto il Federated Learning, come funziona,
+i diversi possibili approcci, quali sono i vantaggi e gli svantaggi.
+Prima di tutto viene spiegato cos'è il Federated Learning e i diversi tipi
+di partizionamento dei dati, mentre nel secondo paragrafo vengono discussi
+gli aspetti positivi di questa tecnica, specie nell'area della privacy dei
+dei dati per contesti ad alta sensibilità. Infine vengono discusse le
+difficoltà che quest'approccio provoca, principalmente la distribuzione non
+IID (Indipendent and Identically Distributed) dei dataset locali.
+
+\section{Come funziona}
+Il Machine Learning è la classe di algoritmi di apprendimento in cui ad un
+modello viene fornito un insieme di dati, il training dataset, da cui
+imparare una certa funzione obbiettivo su questi dati. Un algoritmo di 
+Machine Learning popolare una decina di anni fa era quello delle SVM
+(Support Vector Machine), mentre ad oggi il Deep Learning la fa da padrona.
+Tipicamente, nei problemi di Machine Learning si assume di avere un unico
+dataset e un unico modello che ha accesso a tutti i sample nel dataset.
+Tuttavia quest'approccio può porre alcuni problemi: in contesti in cui si
+lavora con dati sensibili, come i dati medici di privati cittadini, può 
+essere sconsigliato, difficile o vietato (da norme come il GDPR o il più
+recente AI act) raccogliere tali dati da utilizzare per allenare un modello;
+inoltre la creazione e gestione di un tale dataset può avere costi non
+indifferenti dati dal trasporto dei dati in unico data storage centralizzato,
+la memorizzazione di tali dati e il costo dell'effettivo allenamento del
+modello.
+
+Il Federated Learning si pone di risolvere questo problema allenando il nostro
+modello proprio alla fonte dei dati, dove questi sono già presenti o vengono
+generati. In questo framework possiamo individuare N client ognuno dei quali
+ha una copia del modello da allenare fornitagli da un server e ognuno dei quali
+con il proprio dataset, disgiunto da quello degli altri client.
+Ad ogni round di apprendimento ognuno degli N client allena il proprio modello 
+con il proprio dataset locale e, finito il passo di apprendimento, invia al
+server il proprio modello aggiornato. A questo punto il server si occuperà 
+semplicemente di fare una qualche aggregazione dei nuovi N modelli che gli sono
+stati forniti e redistribuire ai client il nuovo modello prodotto.
+
+In questo studio ci occupiamo di applicare il Federated Learning a 2 reti neurali,
+un semplice MLP (Multi Layer Perceptron) e una CNN (Convolutional Neural Network),
+ma questa tecnica può essere usata in tutti gli algoritmi di Machine Learning in 
+cui modello usato permette un qualche meccanismo di aggregazione; le reti neurali
+non sono uniche in questo e le già citate SVM sono un altro di questi casi.
+
+A seconda di come differiscono i dataset locali di ogni client si possono
+fare 2 classificazioni di Federated Learning: quello a partizionamento orizzontale
+e quello a partizionamento verticale.
+
+\section{Metodi di partizionamento}
+Uno dei punti fondamentali del federated learning è come sono 
+distribuiti i dati tra i vari client. Si possono individuare almeno due 
+categorie di federated learning in base a come sono distribuiti: 
+l'Horizontal Federated Learning (HFL) e il Vertical Federated Learning
+(VFL). In questa sezione vengono presentati i due modelli e poi vengono 
+anche discusso un modello ibrido in cui parte dei dati rimane alla fonte 
+e un'altra parte viene condivisa in un unico dataset globale.
+
+\subsection{Partizionamento orizzontale}
+Nel partizionamento orizzontale, detto anche sample-based federated 
+learning, i dataset di tutti i client hanno lo
+stesso schema, le stesse features, e i dataset variano per i sample
+che contengono. Un esempio di questo caso, con cui tutti abbiamo a che 
+fare ogni giorno, sono i suggeritori di testo nelle tastiere dei 
+nostri smartphone, in cui ogni telefono ha la copia di uno stesso 
+modello di partenza e le feature di input a questo modello sono sempre 
+le stesse, una stringa che abbiamo scritto noi, ma i dataset locali 
+di ogni telefono sono diversi perché includono solo i messaggi scritti 
+su quel telefono. In questo modo si ottiene la personalizzazione del 
+suggerimento di testo.
+
+
+\subsection{Partizionamento verticale}
+Nel partizionamento verticale VFL, conosciuto anche come feature-based 
+federated learning, ogni client utilizza un insieme 
+di feature diverse da quelle degli altri, con un qualche collegamento 
+tra i sample. Un primo studio che ha introdotto il VFL in modo distinto
+da quello orizzontale è yang et al. ~\cite{yang2019vfl}.
+In questo caso i dati non vengono da una 
+fonte comune istanziata più volte (come la stessa applicazione che 
+produce gli stessi dati usata da utenti diversi), ma fonti diverse,
+eterogenee e tipicamente indipendenti tra loro, che seppur essendo
+dati diversi fanno riferimento alla stessa "entità" (come ad esempio
+una persona). Un esempio concreto di questa situazione può essere 
+quello di una banca e una società di e-commerce che hanno informazioni
+diverse sugli stessi clienti. L'obbiettivo del VFL in questo caso è
+quello di allenare un modello globale che possa predire o analizzare
+il comportamento dei clienti, evitando di dover condividere le loro 
+informazioni tra la banca e la società di e-commerce.
+Per fare ciò, ogni parte coinvolta avrà un proprio modello locale che 
+calcola un embedding delle feature. Questi embeddings vengono poi
+raccolti e forniti ad un modello globale che finisce di calcolare la 
+funzione obbiettivo.
+
+Una delle principali difficoltà del VFL, assente nel HFL, è quella 
+di allineare le diverse feature tra le varie organizzazioni, in 
+modo che però non avvenga uno scambio di esse. Un altro problema è 
+quello dello scambio degli embeddings in modo sicuro senza che da 
+questi si riesca a risalire alle feature originali, invertendo
+l'operazione di embedding. Questo tipo di problemi in genere può 
+essere risolto facendo uso di Differential Privacy (DF) e/o di 
+homomorphic encryption; alcuni studio che discutono questi problemi e
+come risolverli sono Wei et al. ~\cite{wei2022vflChallenge} e 
+~\cite{liu2022vflChallenge}
+
+
+\subsection{Ibridazione}
+In contesti in cui la privacy non è un requisito fondamentale, dove il
+federated learning può essere applicato per distribuire i calcoli e 
+ottenere personalizzazione sui dati piuttosto che garantire la privacy
+degli utenti, un'idea interessante è quella seguire un approccio ibrido 
+tra quello del federated learning e il machine learning tradizionale.
+L'idea è quella di condividere solo una piccola percentuale di dati 
+in modo da migliorare le performance del modello, pur mantenendo lo 
+spostamento di dati al minimo. Quest'interesse è motivato da risultati 
+empirici come quelli di Zhao et al. ~\cite{zhao2018flniid} che hanno 
+visto come condividendo solo il 5\% dei dati si può ottenere un 
+miglioramento del 30\% sulla precisione del modello.
+
+Se ci si pone in un contesto di federated learning ibrido, anche qua,
+possiamo avere diversi modelli di condivisione dei dati. Un approccio 
+può essere quello di una condivisione client-based in cui alcuni client 
+condividono interamente i loro dataset. La selezione dei client può 
+essere fatta sia in modo centralizzato, dallo stesso server che gestisce 
+il modello globale, che su base volontaria in cui un utente può decidere 
+spontaneamente di condividere i propri dati.
+Un'altra alternativa può essere quella di stabilire un certo quantitativo,
+come una percentuale fissata o un numero costante di sample, che ogni 
+client deve contribuire al dataset globale, mantenendo il resto dei 
+propri dati privati.
+
+
+\section{Strategie di aggregazione}
+Nel federated learning un punto importante è la strategia di aggregazione
+usata per aggiornare il modello globale una volta ricevuti gli update 
+dei modelli dei client. In questa sezione viene prima di tutto introdotta 
+la \textit{FedAvg} la prima e più famosa strategia. Notati i problemi 
+di questa strategia, vengono poi discusse altre strategie presenti 
+nella letteratura che puntano a migliorarne i punti deboli, come 
+
+\subsection{FedAvg}
+La strategia più conosciuta ed usata è la \textit{FedAvg} (Federated
+Averagin), introdotta in McMahan et al. ~\cite{McMahan2016CommunicationEfficientLO},
+paper che introduce per la prima volta il federated learning. Nel 
+\textit{FedAvg} il server aggrega i nuovi parametri calcolando una 
+media pesata di tutti quelli ricevuti, dove il peso dato ad ogni modello
+è la dimensione del dataset locale usato rapporta al numero totale di 
+sample usati nel round di training. In pratica, dati \(K\) client,
+ognuno con la propria copia \(\theta_t\) dei parametri del modello globale 
+al round \(t\) e con il proprio dataset locale di dimensione 
+\(d^k\), per \(k = 1, \dots, K\), denotando con 
+\(D := \sum_{k=1}^{K} d^k\), il numero totale di sample usati in
+questo round di training, i parametri del modello globale al round 
+\(t+1\) sono calcolati con 
+\[
+\theta_{t+1} := \sum_{k=1}^{K} \frac{d^k}{D} \theta_t^k
+\]
+
+Questa è una tecnica semplice da capire e da implementare, ottima per 
+eperimenti di benchmark e feasibility studies ed è la strategia 
+utilizzata anche per questo studio. Tuttavia, è una strategia che 
+assenga ad ogni sample di ogni dataset lo stesso peso relativo sul 
+risultato del modello globale e ciò fa si che \textit{FedAvg} possa 
+fare fatica in contesti molto non-IID.
+
+
+\subsection{FedProx}
+Riconoscendo il problema dell'eterogeneità dei dati e delle capacità 
+computazionali di client diversi, Li et al. ~\cite{li2018FederatedOI}
+introducono una nuova strategia di aggregazione chiamata 
+\textit{FedProx}. Tale strategia funziona in modo analogo a 
+\textit{FedAvg} con la sola differenza che ogni client \(k\), anziché 
+minimizzare la propria normale loss function \(L^k\), minimizza la 
+funzione
+\[
+L^k(\theta^k) + \frac{\mu}{2} ||\theta^k - \theta_t||^2
+\]
+dove il termine di prossimità \(\frac{\mu}{2} ||\theta^k - \theta_t||^2\) 
+penalizza l'allontanarsi molto dal modello globale corrente
+\(\theta_t\) analogamente a come funziona la regolarizzazione \(L_2\),
+introducendo l'iperparametro \(\mu\).
+
+Oltre a ridurre l'impatto che l'eterogeneità che ha i dataset locali 
+sulle performance del modello globale, facendo si che i modelli locali 
+non possano allontanarsi eccessivamente da quello globale, permette 
+anche un maggiore grado di eterogeneità delle prestazioni computazionali 
+dei client. Se con la \texit{FedAvg}, infatti, client che compiono 
+molte epoche di apprendimento velocemente rischiano ritrovarsi con un 
+modello significativamente diverso da uno di un client che ha compiuto
+pochi cicli di allenamento, forzando quindi round di sincronizzazione
+che hanno l'effetto di far andare l'intera rete alla velocità del più
+lento o scartando interamente i nodi più lenti dal sistema federato, 
+il fatto di non potersi allontanare troppo dal modello globale fa si
+che sia più difficile che modelli locali possano divergere tra loro,
+rendendo l'intero sistema più efficiente e stabile.
+
+
+\subsection{SCAFFOLD}
+SCAFFOLD (Stocastic Controlled Averaging for Federated Learning) è una 
+strategia introdotta in ~\cite{Karimireddy2020scaffold} per 
+affrontare il problema del client drift, ovvero quella situazione in 
+cui i modelli locali tendono a divergere gli uni dagli altri e allontanarsi 
+da un minimo globale, producendo overfitting sui loro dataset locali 
+e rallentando la convergenza del modello globale.
+In questa strategia viene introdotto il concetto di control variate
+\(c\), ovvero un ulteriore tensore con la stessa dimensione del modello 
+che sta venendo allenato, utilizzato per ridurre il client drift. 
+Esiste un control variate globale \(c_t\) ed uno locale \(c_t^k\) per 
+ogni client. Ogni client calcola l'aggiornamento dei suoi parametri come:
+\[
+\Delta\theta_{t+1}^k = \eta (\nabla L^k(\theta_t^k) -c_t^k +c_t)
+\]
+dove \(\eta\) è il learning rate e \(L^k\) è la loss function del 
+client \(k\). Dopodiché il server aggiornerà il modello globale con:
+\[
+\theta_{t+1} = \theta_t + \frac{1}{K} \sum_{k=1}{K} \Delta\theta_{t+1}^k
+\]
+
+\subsection{Summary}
+Come spesso accade non esiste una \textit{one size fits all} e diverse 
+strategie hanno diversi pro e contro. Inoltre la necessità o efficiacia 
+di strategie diverse dipende significativamente dai dati e le prestazioni 
+dei client dello specifico sistema. Si possono però tracciare delle 
+linee generali analizzando le performance di diverse strategie sugli 
+stessi dataset di benchmark. Esistono infatti diversi studi comparativi 
+di diverse strategie come Kairouz et al.  ~\cite{kairouz2021flOpenProblems}.
+
+
+\section{Vantaggi}
+Il federated learning offre vantaggi significativi sia in termini di 
+privacy che in termini di costo di infrastruttura. 
+Uno dei primi  vantaggi è la possibilità poter allenare un modello 
+di machine learning in modo distribuito, potendo scaricare parte del 
+\textit{compute} sull'edge anziché sull'organizzazione che fornisce 
+il modello, fattore interessante se si considerano i costi elevati che 
+si incorrono nell'allenare modelli allo stato dell'arte.
+Inoltre in questo setting non c'è bisogno di inviare i dati in unica 
+repository centralizzata, potendo quindi preservare la privacy degli
+utenti che generano tali dati, eliminando la necessità di 
+un'infrastruttura di database o datawarehouse per l'ente che gestisce
+il modello ed eliminando il carico sulla rete per trasmettere tali
+dati, fattori che possono diventare significativi se se il learning è
+fatto su larga scala come ad esempio sulla miriade di dispositivi IoT.
+
+\section{Problemi}
+Nonostante i suoi vantaggi, il federated learning presenta anche delle 
+difficoltà.
+In primis, c'è il fatto che dato che i dati locali sono tipicamente 
+eterogenei e dotati di bias. In particolare non sono IID (Independent
+and identically distributed), condizione spesso richiesta nel 
+machine learning. Il risultato è che ogni client quando allena modello 
+gli insegna lo stesso bias presente nel suo dataset. Particolarmente
+significativo è lo sbilanciamento delle classi in problemi di 
+classificazione ~\cite{zhao2018flniid} ~\cite{xiao2021flci}.
+Inoltre, pur non necessitando di dover inviare dati in ad al server è
+ancora necessario inviargli i modelli aggiornati nel caso del 
+partizionamento orizzontale o l'embedding delle feature nel caso 
+verticale. Se i round di comunicazione tra client e server sono 
+frequenti è possibile che questo risulti in un utlizzo di rente 
+significativamente più alto, fattore che può essere problematico
+specialmente per i client in caso abbiano risorse limitate come reti 
+mobili per telefoni o dispositivi IoT, oltre che un elevato uso di 
+energia che può rapidamente consumare le batterie.
+Un altro problema significativo può essere quello di un leaking di 
+dati sensibili attraverso un \textit{inference attack} a partire 
+dai parametri aggiornati del modello o dal feature embedding. Questi 
+problemi possono essere risolti con tecniche come la differential 
+privacy o l'homomorphic encryption, ma questo comporta un costo 
+computazionale maggiore dell'intero processo e può degradare ancora 
+le performance del modello.
+In utlimo, il federated learning rimane un modello di computazione 
+distribuita e come tale pone tutte le difficoltà di comunicazione e 
+sincronizzazione tipiche di quest'approccio.
+
+
+\subsection{Sintesi}
+Conclundendo, il federated learning è un approccio al machine 
+learning che offre svariati vantaggi, dalla distribuzione del 
+calcolo per l'allenamento, alla personalizzazione del comportamento 
+del modello in funzione dell'utente, alla protezione della 
+privacy dei dati in contesti di dati sensibili.
+
+Tuttavia questi benefici si ottengono al costo di dover gestire
+un sistema distribuito, invece di un unico server cloud, e 
+soprattutto diventa una grande fonte di eterogeneità dei dati,
+rendendoli non-IID e limitando le performance del modello 
+allenato. Per tale motivo il federated learning rimane una 
+tecnica potente ma da utilizzare con attenzione nei contesti 
+in cui risulta utile o necessario, come ad esempio nel caso in 
+cui esistano regolamentazioni a protezione dei dati.

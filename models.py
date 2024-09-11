@@ -73,8 +73,8 @@ class HarModel(nn.Module):
 class ClientVerticalModel(nn.Module):
     def __init__(self, num_features: int):
         super(ClientVerticalModel, self).__init__()
-        self.input = nn.Linear(num_features, 100)
-        self.latent = nn.Linear(100, latent_vector_length)
+        self.input = nn.Linear(num_features, 50)
+        self.latent = nn.Linear(50, latent_vector_length)
 
     def forward(self, x):
         x = F.relu(self.input(x))
@@ -85,8 +85,8 @@ class ClientVerticalModel(nn.Module):
 class ServerVerticalModel(nn.Module):
     def __init__(self, num_clients, num_classes: int):
         super(ServerVerticalModel, self).__init__()
-        self.input = nn.Linear(num_clients * latent_vector_length, 100)
-        self.output = nn.Linear(100, num_classes)
+        self.input = nn.Linear(num_clients * latent_vector_length, 50)
+        self.output = nn.Linear(50, num_classes)
 
     def forward(self, x):
         x = F.relu(self.input(x))
