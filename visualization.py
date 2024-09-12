@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from omegaconf import DictConfig, OmegaConf
 
 
@@ -16,6 +17,7 @@ def _format_filename(cfg: DictConfig):
     bias_factor = cfg.data_cfg.get("bias_factor", 0.0)
     name += f"-c{cfg.data_cfg.num_clients}"
     name += f"-h{cfg.data_cfg.hybrid_ratio}"
+    name += f"-hm_{cfg.data_cfg.hybrid_method}"
     name += f"-b{bias_factor}"
     name += f"-lr{cfg.train_cfg.optimizer.lr}"
     name += f"-e{cfg.train_cfg.epochs}"
@@ -25,37 +27,49 @@ def _format_filename(cfg: DictConfig):
     return f"{name}.png"
 
 
-def create_plot(filename: str, x, y, title="", ylabel=""):
-    # plt.figure(figsize=(8, 6))
-    plt.plot(x, y, marker="o")
-    plt.title(title)
-    # plt.xlabel("Round")
-    plt.ylabel(ylabel)
-    plt.grid(True)
-    plt.savefig(os.path.join(PLOTS_DIR, filename))
-    plt.close()
+def _legend_text(cfg: DictConfig):
+    legend = ""
+    bias_factor = cfg.data_cfg.get("bias_factor", 0.0)
+    legend += f"#clients: {cfg.data_cfg.num_clients}\n"
+    legend += f"HR: {cfg.data_cfg.hybrid_ratio}\n"
+    legend += f"method: {cfg.data_cfg.hybrid_method}\n"
+    legend += f"b: {bias_factor}\n"
+    legend += f"lr: {cfg.train_cfg.optimizer.lr}\n"
+    legend += f"#epochs: {cfg.train_cfg.epochs}\n"
+    legend += f"optim: {cfg.train_cfg.optimizer._target_}\n"
+    return legend
 
 
-def create_single_plot(filename: str, rounds, losses, accuracies):
-    fig, ax1 = plt.subplots(figsize=(10, 6))
+def create_single_plot(filename: str, rounds, losses, accuracies, cfg: DictConfig):
+    fig, ax1 = plt.subplots()
 
     # Plotting losses
     ax1.set_xlabel("Round")
     ax1.set_ylabel("Loss", color="red")
-    ax1.plot(rounds, losses, color="red", label="Loss")
+    ax1.plot(rounds, losses, color="red")
     ax1.tick_params(axis="y", labelcolor="red")
 
     # Creating second y-axis for accuracy
     ax2 = ax1.twinx()
     ax2.set_ylabel("Accuracy (%)", color="blue")
-    ax2.plot(rounds, accuracies, marker="o", color="blue", label="Accuracy")
+    ax2.plot(rounds, accuracies, marker="o", color="blue")
     ax2.tick_params(axis="y", labelcolor="blue")
 
+    ax2.yaxis.set_major_locator(MaxNLocator(integer=True, min_n_ticks=1))
+    plt.title(f"Last Accuracy: {round(accuracies[-1], 2)}%")
     fig.tight_layout()
-    plt.title(f"Last Accuracy: {round(accuracies[len(accuracies)-1], 2)}%")
-    plt.legend()
+    legend = _legend_text(cfg)
+    fig.text(
+        0.5,
+        -0.25,
+        legend,
+        ha="center",
+        fontsize=10,
+        bbox=dict(facecolor="white", alpha=0.5),
+    )
+
     plt.grid(True)
-    plt.savefig(filename)
+    plt.savefig(filename, bbox_inches="tight")
     plt.close()
 
 
@@ -75,4 +89,4 @@ def plot_simulation(
     os.makedirs(base, exist_ok=True)
     filename = _format_filename(cfg)
 
-    create_single_plot(f"{base}/{filename}", rounds, losses, accuracies)
+    create_single_plot(f"{base}/{filename}", rounds, losses, accuracies, cfg)
