@@ -2,10 +2,10 @@ defaults:
   - _self_
 
 partitioning: horizontal
-num_runs: 10
+num_runs: 2
 
 sim_cfg:
-  num_rounds: 20
+  num_rounds: 15
   num_cpus: 2
   num_gpus: 0.0
 
@@ -28,7 +28,7 @@ data_cfg:
   num_classes: 6
 
 hydra:
-  mode: MULTIRUN
+  # mode: MULTIRUN
   sweeper:
     params:
       train_cfg.optimizer._target_: torch.optim.SGD, torch.optim.AdamW
