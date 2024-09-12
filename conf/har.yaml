@@ -2,6 +2,7 @@ defaults:
   - _self_
 
 partitioning: horizontal
+num_runs: 10
 
 sim_cfg:
   num_rounds: 20
@@ -13,12 +14,12 @@ train_cfg:
   optimizer:
     _target_: torch.optim.SGD
     lr: 0.01
-    momentum: 0.9
+    # momentum: 0.9
   loss_fn:
     _target_: torch.nn.CrossEntropyLoss
 
 data_cfg:
-  num_clients: 9
+  num_clients: 20
   hybrid_ratio: 0.0
   hybrid_method: unify
   bias_factor: 0.4
@@ -30,8 +31,7 @@ hydra:
   mode: MULTIRUN
   sweeper:
     params:
-      data_cfg.num_clients: 9, 20, 50
-      data_cfg.hybrid_ratio: 0.0, 0.05, 0.1
-      data_cfg.hybrid_method: unify, share, share-disjoint
+      train_cfg.optimizer._target_: torch.optim.SGD, torch.optim.AdamW
+      data_cfg.hybrid_ratio: 0.0, 0.1, 0.2, 0.3 #, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9
   run:
     dir: .

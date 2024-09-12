@@ -73,16 +73,34 @@ def create_single_plot(filename: str, rounds, losses, accuracies, cfg: DictConfi
     plt.close()
 
 
-def plot_simulation(
-    history,
+def average_metrics(num_rounds: int, histories):
+    loss_sum = [0.0] * num_rounds
+    accuracy_sum = [0.0] * num_rounds
+    num_histories = len(histories)
+
+    for history in histories:
+        loss_list = extract_metric_data(history.metrics_centralized["loss"])
+        accuracy_list = extract_metric_data(history.metrics_centralized["accuracy"])
+        print(accuracy_list)
+
+        # add the values to the corresponding round in the sum lists
+        for i in range(num_rounds):
+            loss_sum[i] += loss_list[i]
+            accuracy_sum[i] += accuracy_list[i]
+
+    # compute the average for each round by dividing the sums by the number of histories
+    avg_loss = [loss_sum[i] / num_histories for i in range(num_rounds)]
+    avg_accuracy = [accuracy_sum[i] / num_histories for i in range(num_rounds)]
+    return avg_loss, avg_accuracy
+
+
+def plot_simulations(
+    histories,
     cfg: DictConfig,
     dir_name="",
 ):
-    losses = extract_metric_data(history.metrics_centralized["loss"])
-    accuracies = [
-        100.0 * value
-        for value in extract_metric_data(history.metrics_centralized["accuracy"])
-    ]
+    losses, accuracies = average_metrics(cfg.sim_cfg.num_rounds, histories)
+    accuracies = [100.0 * value for value in accuracies]
     rounds = [i for i in range(len(losses))]
 
     base = os.path.join(PLOTS_DIR, dir_name)

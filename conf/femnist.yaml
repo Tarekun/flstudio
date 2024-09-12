@@ -2,6 +2,7 @@ defaults:
   - _self_
 
 partitioning: horizontal
+num_runs: 10
 
 sim_cfg:
   num_rounds: 20

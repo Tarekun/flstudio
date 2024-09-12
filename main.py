@@ -7,7 +7,7 @@ from flwr.simulation import start_simulation
 from data import get_horizontal_dataloaders, get_vertical_dataloaders
 from client import get_horizontal_client_generator, get_vertical_client_generator
 from training import get_horizontal_evaluation_fn
-from visualization import plot_simulation
+from visualization import plot_simulations
 from strategy import *
 from models import *
 
@@ -32,6 +32,7 @@ def horizontal_simulation(cfg: DictConfig):
         fraction_evaluate=0,
         evaluate_fn=evaluate_fn,
     )
+
     history = start_simulation(
         client_fn=client_fn,
         # should use this instead of data_cfg.num_clients because in case centralization
@@ -41,11 +42,7 @@ def horizontal_simulation(cfg: DictConfig):
         strategy=strategy,
         client_resources={"num_cpus": sim_cfg.num_cpus, "num_gpus": sim_cfg.num_gpus},
     )
-    plot_simulation(
-        history,
-        cfg,
-        dir_name=f"{data_cfg.dataset}-horizontal",
-    )
+    return history
 
 
 def vertical_simulation(cfg: DictConfig):
@@ -56,6 +53,7 @@ def vertical_simulation(cfg: DictConfig):
     features_per_client = num_features // data_cfg.num_clients
     remainder = num_features % data_cfg.num_clients
 
+    # all models are defined here so that both clients and server can use the same models
     client_models = [
         ClientVerticalModel(features_per_client)
         for _ in range(data_cfg.num_clients - 1)
@@ -79,6 +77,7 @@ def vertical_simulation(cfg: DictConfig):
         train_cfg,
         evaluate_fn=evaluate_fn,
     )
+
     history = start_simulation(
         client_fn=client_fn,
         num_clients=data_cfg.num_clients,
@@ -86,27 +85,36 @@ def vertical_simulation(cfg: DictConfig):
         strategy=strategy,
         client_resources={"num_cpus": sim_cfg.num_cpus, "num_gpus": sim_cfg.num_gpus},
     )
-    plot_simulation(
-        history,
-        cfg,
-        dir_name=f"{data_cfg.dataset}-vertical",
-    )
+    return history
 
 
 @hydra.main(config_path="conf", config_name="har", version_base="1.2")
 def main(cfg: DictConfig):
-    print("Starting simulation with the following config:")
-    print(OmegaConf.to_yaml(cfg))
+    histories = []
+    partitioning = cfg.partitioning
 
-    if cfg.partitioning == "horizontal":
-        horizontal_simulation(cfg)
-    elif cfg.partitioning == "vertical":
-        vertical_simulation(cfg)
-
-    else:
-        raise ValueError(
-            f"Unsupported partitioning selected: {cfg.partitioning}. Only 'horizontal' and 'vertical' are accepted"
+    for i in range(cfg.num_runs):
+        print(
+            f"Starting simulation number {i} of {cfg.num_runs} with the following config:"
         )
+        print(OmegaConf.to_yaml(cfg))
+
+        if partitioning == "horizontal":
+            histories.append(horizontal_simulation(cfg))
+        elif partitioning == "vertical":
+            histories.append(vertical_simulation(cfg))
+
+        else:
+            raise ValueError(
+                f"Unsupported partitioning selected: {partitioning}. Only 'horizontal' and 'vertical' are accepted"
+            )
+
+    print("Plotting results...")
+    plot_simulations(
+        histories,
+        cfg,
+        dir_name=f"{cfg.data_cfg.dataset}-{partitioning}",
+    )
 
 
 if __name__ == "__main__":
