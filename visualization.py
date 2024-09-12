@@ -81,7 +81,6 @@ def average_metrics(num_rounds: int, histories):
     for history in histories:
         loss_list = extract_metric_data(history.metrics_centralized["loss"])
         accuracy_list = extract_metric_data(history.metrics_centralized["accuracy"])
-        print(accuracy_list)
 
         # add the values to the corresponding round in the sum lists
         for i in range(num_rounds):
