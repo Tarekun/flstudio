@@ -235,14 +235,20 @@ def _get_datasets(
         raise ValueError(f"Unsupported dataset: {data_cfg.dataset}")
 
 
-def _centralize_trainsets(train_sets, num_clients, hybrid_ratio, hybrid_method: str):
+def _centralize_trainsets(
+    train_sets: list[Dataset], num_clients: int, hybrid_ratio, hybrid_method
+):
     if hybrid_method == "unify":
         # this method collapses the first num_centralized datasets into one
+        # TODO: handle permutation somewhere else?
         num_centralized = int(hybrid_ratio * num_clients)
+        shared_sets = []
+        for _ in range(num_centralized):
+            random_index = random.randint(0, len(train_sets) - 1)
+            shared_sets.append(train_sets.pop(random_index))
+
         if num_centralized > 0:
-            train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
-                num_centralized:
-            ]
+            train_sets = [ConcatDataset(shared_sets)] + train_sets
 
     elif hybrid_method == "share":
         # this method copies num_shared samples in a collective dataset
@@ -288,8 +294,14 @@ def get_horizontal_dataloaders(
 
     train_sets, _, test_set = _get_datasets(data_cfg)
     train_sets = _centralize_trainsets(
-        train_sets, data_cfg.hybrid_ratio, data_cfg.num_clients, data_cfg.hybrid_method
+        train_sets=train_sets,
+        num_clients=len(train_sets),
+        hybrid_ratio=data_cfg.hybrid_ratio,
+        hybrid_method=data_cfg.hybrid_method,
     )
+    print("Client datasets produced:")
+    for train_set in train_sets:
+        print(len(train_set), end=" ")
 
     train_loaders = [
         DataLoader(train_set, batch_size=data_cfg.batch_size, shuffle=True)
