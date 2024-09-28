@@ -7,7 +7,7 @@ from collections import OrderedDict
 import hydra
 
 
-device = torch.device("cpu")
+device = torch.device("cuda:0")
 
 
 def validate(model: nn.Module, val_loader, train_cfg: DictConfig):
@@ -17,13 +17,14 @@ def validate(model: nn.Module, val_loader, train_cfg: DictConfig):
     correct = 0
     total = 0
     criterion = hydra.utils.instantiate(train_cfg.loss_fn)
+    model.to(device)
 
     with torch.no_grad():
-        for images, labels in val_loader:
-            images = images.to(device)
+        for features, labels in val_loader:
+            features = features.to(device)
             labels = labels.to(device)
 
-            outputs = model(images)
+            outputs = model(features)
             loss = criterion(outputs, labels)
             val_loss += loss.item()
 

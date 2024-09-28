@@ -3,10 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from data import extract_features
 
-featmaps = [32, 64, 128]
-kernels = [3, 3, 3]
-first_linear_size = 128 * 3 * 3
-linears = [512, 256, 62]
 
 latent_vector_length = 20
 
@@ -26,7 +22,10 @@ class CnnEmnist(nn.Module):
             padding=1,
         )
 
-        self.fc = nn.Linear(64 * 3 * 3, 512)
+        # fully connected layer
+        self.fc = nn.Linear(64 * 7 * 7, 512)
+
+        # output layer
         self.classification = nn.Linear(512, num_classes)
 
     def forward(self, x):
@@ -34,7 +33,7 @@ class CnnEmnist(nn.Module):
         x = self.pool(F.relu(self.conv2(x)))
 
         # flatten
-        x = x.view(-1, first_linear_size)
+        x = x.view(-1, 64 * 7 * 7)
 
         x = F.relu(self.fc(x))
 
