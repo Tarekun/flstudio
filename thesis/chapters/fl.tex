@@ -1,0 +1,64 @@
+\chapter{Federated Learning}
+In questa sezione viene introdotto il Federated Learning, come funziona,
+i diversi possibili approcci, quali sono i vantaggi e gli svantaggi.
+Prima di tutto viene spiegato cos'è il Federated Learning e i diversi tipi
+di partizionamento dei dati, mentre nel secondo paragrafo vengono discussi
+gli aspetti positivi di questa tecnica, specie nell'area della privacy dei
+dei dati per contesti ad alta sensibilità. Infine vengono discusse le
+difficoltà che quest'approccio provoca, principalmente la distribuzione non
+IID (Indipendent and Identically Distributed) dei dataset locali.
+
+\section{Come funziona}
+Il Machine Learning è la classe di algoritmi di apprendimento in cui ad un
+modello viene fornito un insieme di dati, il training dataset, da cui
+imparare una certa funzione obbiettivo su questi dati. Un algoritmo di 
+Machine Learning popolare una decina di anni fa era quello delle SVM
+(Support Vector Machine), mentre ad oggi il Deep Learning la fa da padrona.
+Tipicamente, nei problemi di Machine Learning si assume di avere un unico
+dataset e un unico modello che ha accesso a tutti i sample nel dataset.
+Tuttavia quest'approccio può porre alcuni problemi: in contesti in cui si
+lavora con dati sensibili, come i dati medici di privati cittadini, può 
+essere sconsigliato, difficile o vietato (da norme come il GDPR o il più
+recente AI act) raccogliere tali dati da utilizzare per allenare un modello;
+inoltre la creazione e gestione di un tale dataset può avere costi non
+indifferenti dati dal trasporto dei dati in unico data storage centralizzato,
+la memorizzazione di tali dati e il costo dell'effettivo allenamento del
+modello.
+
+Il Federated Learning si pone di risolvere questo problema allenando il nostro
+modello proprio alla fonte dei dati, dove questi sono già presenti o vengono
+generati. In questo framework possiamo individuare N client ognuno dei quali
+ha una copia del modello da allenare fornitagli da un server e ognuno dei quali
+con il proprio dataset, disgiunto da quello degli altri client.
+Ad ogni round di apprendimento ognuno degli N client allena il proprio modello 
+con il proprio dataset locale e, finito il passo di apprendimento, invia al
+server il proprio modello aggiornato. A questo punto il server si occuperà 
+semplicemente di fare una qualche aggregazione dei nuovi N modelli che cli sono
+stati forniti e redistribuire ai client il nuovo modello prodotto.
+
+In questo studio ci occupiamo di applicare il Federated Learning a 2 reti neurali,
+un semplice MLP (Multi Layer Perceptron) e una CNN (Convolutional Neural Network),
+ma questa tecnica può essere usata in tutti gli algoritmi di Machine Learning il
+cui modello usato permette un qualche meccanismo di aggregazione; le reti neurali
+non sono uniche in questo e le già citate SVM sono un altro di questi casi.
+
+A seconda di come differiscono i dataset locali di ogni client si possono
+fare 2 classificazioni di Federated Learning: quello a partizionamento orizzontale
+e quello a partizionamento verticale.
+
+\section{Partizionamento orizzontale}
+Nel partizionamento orizzontale i dataset di tutti i client hanno lo
+stesso schema, le stesse features.
+
+\section{Partizionamento verticale}
+Nel partizionamento verticale invece ogni client utilizza un insieme 
+di feature diverse da quelle degli altri, con un qualche collegamento 
+tra i sample.
+
+\section{Ibridazione}
+
+\section{Vantaggi}
+
+\section{Problemi}
+
+Here is a citation~\cite{einstein1905}.

@@ -1,0 +1,112 @@
+\chapter{I Dataset}
+In questa sezione vengono introdotti i dataset usati per i nostri
+esperimenti. Il primo dei due è il FEMNIST, cioè l'EMNIST 
+in cui ogni lettera o numero sono raggruppati in base alla 
+persona che li ha scritti; il secondo è l'UCI HAR un dataset per il
+riconoscimento dell'attività dell'utente in base a misurazioni fatte
+da un dispositivo che ha addosso, come l'accellerometro di smartphones
+o smart watches.
+
+\section{FEMNIST}
+Il famoso dataset MNIST (Modified National Institute of Standards and
+Technology), l'Hello World del Machine Learning, nasce nel 1994 creato 
+da LeCun et al.~\cite{lecun1998mnist} partendo dai un altro dataset del NIST.
+Il MNIST è stato creato a partire dai dataset SD-1 e SD-3 (Special
+Dataset). Lo SD-3 veniva usato come training set e conteneva immagini
+di cifre scritte a mano da impiegati dell'American Census Bureau,
+mentre lo SD-1, usato come test set, erano cifre scritte a mano da 
+studenti delle scuole superiori americane. Le cifre degli studenti
+erano però scritte con una calligrafia più illegibile, rendendo più 
+difficile trarre conclusioni sulle capacità del modello alla fine del
+training. Per questo motivo è stato creato un unico dataset, l'MNIST 
+che contiene un totale di 60'000 immagini di cifre sia degli studenti
+che degli impiegati dell'American Census Bureau.
+
+L'EMNIST (Extended MNIST) è un'estensione del dataset originale,
+pubblicata nel 2017 da Cohen et al.~\cite{cohen2017emnist} nata 
+per rendere il problema più difficile, viste le performance altissime
+che le CNN ottengono con poche epoche di training sul MNIST originale.
+Nasce dall'unione di altri dataset gestiti dal NIST, include cifre e
+anche lettere sia maiuscole che minuscole, per un totale di 62 classi.
+L'MNIST originale include cifre scritte da circa 250 persone diverse,
+mentre l'EMNIST contiene dati da 3597 persone diverse e un totale di 
+814'255 sample diversi.
+
+Per finire, il FEMNIST (Federated EMINST)
+viene introdotto in Caldas et al.~\cite{caldas2019femnist}
+ed è un dataset che include tutti i sample dell'EMNIST partizionati
+per scrittore originale, in modo da poter essere utilizzato in contesti
+di apprendimento federato, in cui ogni client esegue il training non su
+tutti i sample dell'EMNIST, ma solo quelli dello scrittore originale
+corrispondente.
+
+Come tutti i suoi predeccessori, il FEMNIST è un dataset che contiene
+immagini di 28x28 pixel in greyscale, quindi ad un unico canale. Le
+cifre e lettere sono tutte centrate nell'immagine in base centro di 
+massa dei pixel del carattere.
+Il dataset originale è stato costruito insieme ad altri da, tra gli 
+altri, dipendenti di google e come tale è stato pensato per funzionare
+nativamente con Tensorflow. La repository originale per generare il
+dataset può essere trovata su github ~\cite{leaf_repo}. Dato che però
+il codice per questi esperimenti è stato scritto nel framework di PyTorch,
+seguendo il dataset loader indicato su Paper with Code ~\cite{femnist_pwc},
+per generare il dataset è stata usata la repo di Xiao Chenguang 
+~\cite{femnist_hdf5}, che permette di generare un file .hdf5 contenente
+l'intero dataset, potendo anche scegliere se includere tutti i caratteri
+o solo le cifre come nel MNIST originale. Quella che segue è la funzione
+utilizzata per aprire il dataset .hdf5 creato utilizzando questa repo
+e istanziare i Dataset di PyTorch per ognuno dei client usanti nella
+simulazione:
+
+\lstset{style=mypython}
+\begin{lstlisting}
+    def _get_femnist_datasets(
+        num_writers: int,
+        val_ratio: float,
+        test_ratio: float,
+        only_digits: bool = False,
+    ) -> tuple[list[Dataset], list[Dataset], list[Dataset]]:
+        """Retrieves the FEMNIST dataset at the HDF5 file. It returns a 3 element tuple containing:
+        - the list of training sets partitioned per client
+        - the list of validation sets partitioned per client
+        - the list of test sets partitioned per client"""
+    
+        dataset_file = "write_digits.hdf5" if only_digits else "write_all.hdf5"
+        full_dataset = h5py.File(f"data/{dataset_file}", "r")
+        writers = sorted(full_dataset.keys())[:num_writers]
+        train_sets = []
+        val_sets = []
+        test_sets = []
+    
+        for writer in writers:
+            images = full_dataset[writer]["images"][:]
+            labels = full_dataset[writer]["labels"][:]
+            client_dataset = FemnistWriterDataset(
+                images, labels, transform=femnist_transform
+            )
+    
+            train_subset, val_subset, test_subset = _split_dataset(
+                client_dataset, val_ratio, test_ratio
+            )
+            train_sets.append(train_subset)
+            val_sets.append(val_subset)
+            test_sets.append(test_subset)
+    
+        full_dataset.close()
+        return train_sets, val_sets, test_sets
+\end{lstlisting}
+
+Tutti gli argomenti di questa funzione sono controllabili tramite la
+configurazione Hydra usata per eseguire lo script, più dettagli a riguardo
+sono indicati nel capitolo [TODO scrivere questo numero]
+
+
+\section{UCI HAR}
+L'UCI HAR (University of California Irvine (machine learning repository) -
+Human Activity Recognition) è un dataset diverso dal FEMNIST. In primis
+non è un dataset di computer vision, ma di human activity recognition.
+Il dataset è stato introdotto in ~\cite{Anguita2013APD} e la fonte dei
+dati sono accellerometri e giroscopi di smartphones e smartwatches.
+
+
+\section{Problemi}
