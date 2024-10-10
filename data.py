@@ -16,6 +16,7 @@ femnist_transform = transforms.Compose(
 
 class FemnistWriterDataset(Dataset):
     def __init__(self, images: np.ndarray, labels: np.ndarray, transform=None):
+        super().__init__()
         if len(images) != len(labels):
             raise Exception(
                 f"Different number of images ({len(images)}) and labels ({len(labels)})"
@@ -36,35 +37,14 @@ class FemnistWriterDataset(Dataset):
 
 
 class HarDataset(Dataset):
-    def __load_x__(filename) -> list[list[float]]:
-        data = []
-        with open(filename, "r") as file:
-            for line in file:
-                floats = [float(num) for num in line.split()]
-                data.append(floats)
-        return torch.tensor(data, dtype=torch.float32)
-
-    def __load_y__(filename) -> list[torch.Tensor]:
-        labels = []
-        with open(filename, "r") as file:
-            for line in file:
-                label = int(line)
-                one_hot = torch.zeros(6, dtype=torch.float32)
-                one_hot[label - 1] = label
-                labels.append(one_hot)
-        return labels
-
-    def __init__(self, train=True, transform=None):
+    def __init__(self, features, labels, train=True, transform=None):
         super().__init__()
-        variant = "train" if train else "test"
-        self.x = HarDataset.__load_x__(f"data/X_{variant}.txt")
-        self.y = HarDataset.__load_y__(f"data/y_{variant}.txt")
-        self.transform = transform
-
-        if len(self.x) != len(self.y):
+        if len(features) != len(labels):
             raise Exception(
-                f"Problem with data files: x [{len(self.x)}] and y [{len(self.y)}] length should be the same"
+                f"Different number of features ({len(features)}) and labels ({len(labels)})"
             )
+        self.x, self.y = features, labels
+        self.transform = transform
 
     def __getitem__(self, index):
         target_data = self.y[index]
@@ -177,27 +157,57 @@ def _get_femnist_datasets(
     return train_sets, val_sets, test_sets
 
 
-def _get_har_datasets(
-    num_clients: int,
-    num_classes: int,
-    bias_factor: float,
-) -> tuple[list[Dataset], Dataset]:
+def _load_har_dataset(train: bool):
+    variant = "train" if train else "test"
+    full_features = [[] for _ in range(30)]
+    full_labels = [[] for _ in range(30)]
+
+    # get subject ids for measurements
+    with open(f"data/subject_{variant}.txt", "r") as subject_file:
+        subject_ids = [int(line.strip()) - 1 for line in subject_file]
+    # get features and match them with the user
+    with open(f"data/X_{variant}.txt", "r") as feature_file:
+        for i, line in enumerate(feature_file):
+            features = [float(num) for num in line.split()]
+            full_features[subject_ids[i]].append(features)
+    # get labels and match them with the user
+    with open(f"data/y_{variant}.txt", "r") as label_file:
+        for i, line in enumerate(label_file):
+            label = int(line)
+            one_hot = torch.zeros(6, dtype=torch.float32)
+            one_hot[label - 1] = label
+            full_labels[subject_ids[i]].append(one_hot)
+
+    if train:
+        return full_features, full_labels
+    # flatten in one dataset for testing
+    else:
+        return [
+            feature for user_features in full_features for feature in user_features
+        ], [label for user_labels in full_labels for label in user_labels]
+
+
+def _get_har_datasets() -> tuple[list[Dataset], Dataset]:
     """Retrieves the HAR dataset. It returns a 2 element tuple containing:
     - the list of training sets partitioned per client
     - the full test set unpartitioned"""
 
-    full_trainset = HarDataset(train=True)
-    full_testset = HarDataset(train=False)
+    train_features, train_labels = _load_har_dataset(True)
+    test_features, test_labels = _load_har_dataset(False)
 
-    train_size = len(full_trainset)
-    train_sizes = [train_size // num_clients] * num_clients
-    train_sizes[0] += train_size % num_clients
-
-    train_splits = _biased_split(
-        full_trainset, num_clients, num_classes, bias_factor=bias_factor
+    client_datasets = [
+        HarDataset(
+            features=torch.tensor(train_features[cid], dtype=torch.float32),
+            labels=train_labels[cid],
+        )
+        for cid in range(len(train_features))
+        # some clients dont include measurements in the trainset
+        if len(train_features[cid]) > 0
+    ]
+    test_dataset = HarDataset(
+        torch.tensor(test_features, dtype=torch.float32), test_labels
     )
-    # this dataset is already split into 70% train and 30% test, no validation used
-    return train_splits, full_testset
+    return client_datasets, test_dataset
 
 
 def _get_datasets(
@@ -218,23 +228,27 @@ def _get_datasets(
         return train_sets, val_sets, ConcatDataset(test_sets)
 
     elif data_cfg.dataset == "har":
-        train_sets, test_set = _get_har_datasets(
-            data_cfg.num_clients, data_cfg.num_classes, data_cfg.get("bias_factor", 0.0)
-        )
+        train_sets, test_set = _get_har_datasets()
         return train_sets, [], test_set
 
     else:
         raise ValueError(f"Unsupported dataset: {data_cfg.dataset}")
 
 
-def _centralize_trainsets(train_sets, num_clients, hybrid_ratio, hybrid_method: str):
+def _centralize_trainsets(
+    train_sets: list[Dataset], num_clients: int, hybrid_ratio, hybrid_method
+):
     if hybrid_method == "unify":
         # this method collapses the first num_centralized datasets into one
+        # TODO: handle permutation somewhere else?
         num_centralized = int(hybrid_ratio * num_clients)
+        shared_sets = []
+        for _ in range(num_centralized):
+            random_index = random.randint(0, len(train_sets) - 1)
+            shared_sets.append(train_sets.pop(random_index))
+
         if num_centralized > 0:
-            train_sets = [ConcatDataset(train_sets[:num_centralized])] + train_sets[
-                num_centralized:
-            ]
+            train_sets = [ConcatDataset(shared_sets)] + train_sets
 
     elif hybrid_method == "share":
         # this method copies num_shared samples in a collective dataset
@@ -280,8 +294,14 @@ def get_horizontal_dataloaders(
 
     train_sets, _, test_set = _get_datasets(data_cfg)
     train_sets = _centralize_trainsets(
-        train_sets, data_cfg.hybrid_ratio, data_cfg.num_clients, data_cfg.hybrid_method
+        train_sets=train_sets,
+        num_clients=len(train_sets),
+        hybrid_ratio=data_cfg.hybrid_ratio,
+        hybrid_method=data_cfg.hybrid_method,
     )
+    print("Client datasets produced:")
+    for train_set in train_sets:
+        print(len(train_set), end=" ")
 
     train_loaders = [
         DataLoader(train_set, batch_size=data_cfg.batch_size, shuffle=True)
@@ -293,6 +313,7 @@ def get_horizontal_dataloaders(
 
 
 def get_vertical_dataloaders(data_cfg: DictConfig) -> tuple[DataLoader, DataLoader]:
+    # TODO: this need to be fixed now
     if data_cfg.dataset != "har":
         raise ValueError(
             f"Only vertical supported dataset is HAR, requested was: {data_cfg.dataset}"
