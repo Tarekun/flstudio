@@ -1,1 +1,56 @@
 \chapter{Introduzione}
+La rapida proliferazione di dispositivi connessi sulla rete, insieme 
+ad una maggiore sensibilità diffusa nei confronti della privacy 
+hanno fatto sì che si rendessero necessari nuovi modelli di machine 
+learning che tenessero in considerazione i requisiti di contesti 
+privacy oriented. Il Federated learning (FL) è nuovo approccio che 
+risolve questo problema permettendo a diversi client (ad esempio
+telefoni, dispositivi IoT o server edge) distribuiti per il mondo di 
+allenare collaborativamente uno stesso modello di machine learning. La 
+privacy dei dati è preservata mantenendo i dati all'origine, sui 
+client stessi che li producono, e portando invece il modello da 
+allenare ad essi.
+
+Nonostante le sue potenzialità, il federated learning ha comunque delle
+difficoltà, prima fra tutte il fatto che tipicamente i dati locali 
+dei client sono estremamente eterogenei tra loro, peggiorando le 
+performance del modello allenato. Una delle assunzioni tipiche per le 
+tecniche dei machine learning più diffuse è che il dataset utilizzato 
+per l'apprendimento sia costituito da sample IID (Indipendenti e 
+Identicamente Distribuiti), fatto che tipicamente non si verifica in 
+contesti federati.
+
+Una delle possibili strategie per migliorare le capacità di un modello 
+allenato in modo federato è quella di costruire un dataset globale, 
+composto da un sottoinsieme dei dataset dei client che viene condiviso 
+e reso pubblico, il federated learning ibrido. Questa tesi studia la 
+variazione di performance di un modello sotto diversi gradi di 
+ibridazione. Vengono presi in considerazione due dataset diversi nel 
+dominio dell'image classification e del human activity recognition 
+-FEMNIST e UCI HAR- per vedere come si comporta il federated 
+learning sotto diverse modalità. Il FEMNIST (Federated Extended MNIST)
+è un'estensione del celebre MNIST che include immagini sia di cifre 
+che di numeri e i cui caratteri sono partizionati in base allo scrittore
+originale; l'UCI HAR invece contiene misurazioni fatte 
+da accellerometro e giroscopio di uno smartphone tenuto in vita da 30
+persone diverse mentre compiono azioni diverse. Per studiare al meglio 
+gli effetti di diverse strategie di condivisione dei dati, si è 
+allenata la stessa rete neurale con diversi gradi di condisione dei 
+dati (da 0\%, federato, a 100\%, centralizzato) e diversi metodi di 
+condivisione dei dati. Per il FEMNIST è stata usata una CNN e per UCI 
+HAR un MLP. Entrambi i modelli sono stati allenati sia con SGD che 
+con AdamW, due algoritmi di ottimizzazione tipici nel Deep Learning.
+
+
+Questo elaborato è strutturato nel modo seguente: il capitolo 2 
+introduce il federated learning, diverse categorizzazioni e strategie, 
+seguiti da una discussione di vantaggi e limitazioni; il capitolo 3 
+discute nel dettaglio gli esperimenti, descrivendo i dataset e i 
+modelli usati e spiegando le scelte fatte; il capitolo 4 illustra 
+l'implementazione del progetto in codice python, facendo uso di Flower
+~\cite{flowerai}, un framework per fare simulazioni o applicazioni
+di federated learning che supporta 
+sia PyTorch che Tensorflow e vari ambienti di 
+sviluppo oltre python tra cui Android, iOS e C++; infine il capitolo 5
+mostra i risultati degli esperimenti e discute anche possibili metodi 
+per migliorare ulteriormente le performance del modello.
