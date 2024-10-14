@@ -88,7 +88,7 @@ def vertical_simulation(cfg: DictConfig):
     return history
 
 
-@hydra.main(config_path="conf", config_name="har", version_base="1.2")
+@hydra.main(config_path="conf", config_name="femnist", version_base="1.2")
 def main(cfg: DictConfig):
     histories = []
     partitioning = cfg.partitioning

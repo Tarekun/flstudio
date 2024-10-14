@@ -3,10 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from data import extract_features
 
-featmaps = [32, 64, 128]
-kernels = [3, 3, 3]
-first_linear_size = featmaps[2] * kernels[2] * kernels[2]
-linears = [512, 256, 62]
 
 latent_vector_length = 20
 
@@ -17,43 +13,32 @@ class CnnEmnist(nn.Module):
         # reused pooling layer
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
 
-        # 3 convolutional layers
-        self.conv1 = nn.Conv2d(
-            in_channels=1, out_channels=featmaps[0], kernel_size=kernels[0], padding=1
-        )
+        # 2 convolutional layers
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(
-            in_channels=featmaps[0],
-            out_channels=featmaps[1],
-            kernel_size=kernels[1],
-            padding=1,
-        )
-        self.conv3 = nn.Conv2d(
-            in_channels=featmaps[1],
-            out_channels=featmaps[2],
-            kernel_size=kernels[2],
+            in_channels=32,
+            out_channels=64,
+            kernel_size=3,
             padding=1,
         )
 
-        # 2 fully connected layers
-        self.fc1 = nn.Linear(first_linear_size, linears[0])
-        self.fc2 = nn.Linear(linears[0], linears[1])
+        # fully connected layer
+        self.fc = nn.Linear(64 * 7 * 7, 512)
 
         # output layer
-        self.fc3 = nn.Linear(linears[1], num_classes)
+        self.classification = nn.Linear(512, num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = self.pool(F.relu(self.conv3(x)))
 
         # flatten
-        x = x.view(-1, first_linear_size)
+        x = x.view(-1, 64 * 7 * 7)
 
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = F.relu(self.fc(x))
 
         # final layer uses softmax as this is a classification problem
-        out = F.log_softmax(self.fc3(x), dim=1)
+        out = F.log_softmax(self.classification(x), dim=1)
         return out
 
 

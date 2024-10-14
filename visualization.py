@@ -14,11 +14,11 @@ def extract_metric_data(metric_history):
 
 def _format_filename(cfg: DictConfig):
     name = "results"
-    bias_factor = cfg.data_cfg.get("bias_factor", 0.0)
-    name += f"-c{cfg.data_cfg.num_clients}"
+    # bias_factor = cfg.data_cfg.get("bias_factor", 0.0)
+    # name += f"-c{cfg.data_cfg.num_clients}"
     name += f"-h{cfg.data_cfg.hybrid_ratio}"
     name += f"-hm_{cfg.data_cfg.hybrid_method}"
-    name += f"-b{bias_factor}"
+    # name += f"-b{bias_factor}"
     name += f"-lr{cfg.train_cfg.optimizer.lr}"
     name += f"-e{cfg.train_cfg.epochs}"
     name += f"-{cfg.train_cfg.optimizer._target_}"
@@ -30,17 +30,25 @@ def _format_filename(cfg: DictConfig):
 def _legend_text(cfg: DictConfig):
     legend = ""
     bias_factor = cfg.data_cfg.get("bias_factor", 0.0)
-    legend += f"#clients: {cfg.data_cfg.num_clients}\n"
+    # legend += f"#clients: {cfg.data_cfg.num_clients}\n"
     legend += f"HR: {cfg.data_cfg.hybrid_ratio}\n"
     legend += f"method: {cfg.data_cfg.hybrid_method}\n"
-    legend += f"b: {bias_factor}\n"
+    # legend += f"b: {bias_factor}\n"
     legend += f"lr: {cfg.train_cfg.optimizer.lr}\n"
     legend += f"#epochs: {cfg.train_cfg.epochs}\n"
     legend += f"optim: {cfg.train_cfg.optimizer._target_}\n"
     return legend
 
 
-def create_single_plot(filename: str, rounds, losses, accuracies, cfg: DictConfig):
+def create_single_plot(
+    filename: str,
+    rounds,
+    losses,
+    accuracies,
+    min_accuracy,
+    max_accuracy,
+    cfg: DictConfig,
+):
     fig, ax1 = plt.subplots()
 
     # Plotting losses
@@ -52,7 +60,29 @@ def create_single_plot(filename: str, rounds, losses, accuracies, cfg: DictConfi
     # Creating second y-axis for accuracy
     ax2 = ax1.twinx()
     ax2.set_ylabel("Accuracy (%)", color="blue")
-    ax2.plot(rounds, accuracies, marker="o", color="blue")
+
+    lower_errors = [
+        abs(avg - min_acc) for avg, min_acc in zip(accuracies, min_accuracy)
+    ]
+    upper_errors = [
+        abs(max_acc - avg) for avg, max_acc in zip(accuracies, max_accuracy)
+    ]
+    error = [lower_errors, upper_errors]
+    print(lower_errors)
+    print(upper_errors)
+
+    # Plot averaged accuracy with error bars
+    ax2.errorbar(
+        rounds,
+        accuracies,
+        yerr=error,
+        fmt="o-",
+        color="blue",
+        ecolor="black",
+        capsize=5,
+        label="Average Accuracy",
+    )
+
     ax2.tick_params(axis="y", labelcolor="blue")
 
     ax2.yaxis.set_major_locator(MaxNLocator(integer=True, min_n_ticks=1))
@@ -76,6 +106,8 @@ def create_single_plot(filename: str, rounds, losses, accuracies, cfg: DictConfi
 def average_metrics(num_rounds: int, histories):
     loss_sum = [0.0] * num_rounds
     accuracy_sum = [0.0] * num_rounds
+    min_accuracy = [float("inf")] * num_rounds
+    max_accuracy = [float("-inf")] * num_rounds
     num_histories = len(histories)
 
     for history in histories:
@@ -86,11 +118,14 @@ def average_metrics(num_rounds: int, histories):
         for i in range(num_rounds):
             loss_sum[i] += loss_list[i]
             accuracy_sum[i] += accuracy_list[i]
+            # update min and max accuracies
+            min_accuracy[i] = min(min_accuracy[i], accuracy_list[i])
+            max_accuracy[i] = max(max_accuracy[i], accuracy_list[i])
 
     # compute the average for each round by dividing the sums by the number of histories
     avg_loss = [loss_sum[i] / num_histories for i in range(num_rounds)]
     avg_accuracy = [accuracy_sum[i] / num_histories for i in range(num_rounds)]
-    return avg_loss, avg_accuracy
+    return avg_loss, avg_accuracy, min_accuracy, max_accuracy
 
 
 def plot_simulations(
@@ -98,12 +133,29 @@ def plot_simulations(
     cfg: DictConfig,
     dir_name="",
 ):
-    losses, accuracies = average_metrics(cfg.sim_cfg.num_rounds, histories)
+    losses, accuracies, min_accuracies, max_accuracies = average_metrics(
+        cfg.sim_cfg.num_rounds, histories
+    )
     accuracies = [100.0 * value for value in accuracies]
+    min_accuracies = [100.0 * value for value in min_accuracies]
+    max_accuracies = [100.0 * value for value in max_accuracies]
     rounds = [i for i in range(len(losses))]
+
+    print(accuracies)
+    print(min_accuracies)
+    print(max_accuracies)
+    print()
 
     base = os.path.join(PLOTS_DIR, dir_name)
     os.makedirs(base, exist_ok=True)
     filename = _format_filename(cfg)
 
-    create_single_plot(f"{base}/{filename}", rounds, losses, accuracies, cfg)
+    create_single_plot(
+        f"{base}/{filename}",
+        rounds,
+        losses,
+        accuracies,
+        min_accuracies,
+        max_accuracies,
+        cfg,
+    )
