@@ -1,0 +1,93 @@
+\documentclass[12pt, a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage[numbers]{natbib}  % For numeric citation style with natbib
+\usepackage{listings}  % for code formatting
+\usepackage{xcolor}  % For custom colors
+
+% Page margins
+\geometry{
+    top=1in,
+    bottom=1in,
+    left=1.5in,
+    right=1in
+}
+
+% Line spacing
+\onehalfspacing
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,      % Monospaced font
+    keywordstyle=\color{blue},       % Reserved keywords in blue
+    commentstyle=\color{green},      % Comments in green
+    stringstyle=\color{red},         % Strings in red
+    numbers=none,                    % Remove line numbers
+    frame=single,                    % Add frame around the code
+    breaklines=true,                 % Break long lines
+    tabsize=4,                       % Tab size
+    showstringspaces=false,          % Do not show underscores for spaces
+    aboveskip=0pt,                   % Remove space above the code block
+    belowskip=0pt,                   % Remove space below the code block
+    lineskip=-1pt,                   % Reduce space between lines
+    morekeywords={[1]self},
+    morekeywords={[2]int, float, bool, tuple, list, Dataset, File, FemnistWriterDataset, HarDataset, torch, CnnEmnist, nn, Module, MaxPool2d, Conv2d, Linear, F, HarModel, ClientVerticalModel, ServerVerticalModel, FullVerticalModel},  % Type keywords
+    keywordstyle=[2]\color{cyan},    % Type keywords in cyan
+}
+
+\begin{document}
+
+\title{FL Studio - Uno Studio di Federated Learning}
+\author{Daniele Tarek Iaisy}
+\date{Ottobre 2024}
+\maketitle
+
+% Abstract
+\begin{abstract}
+Il federated learning è emerso come un promettente modello distribuito 
+che permette ad un ampio numero di client di partecipare collettivamente
+al training di un modello di machine learning, senza compromettere la 
+privacy dei dati usati per il training, mantenendoli al sicuro alla 
+fonte. Questo è un modello diametralmente opposto a quello del machine 
+learning tradizionale in cui viene curato un unico dataset globale 
+in cui vengono raccolti tutti i dati. Questa tesi si pone di studiare 
+empiricamente come diversi gradi di ibridazione di approccio da quello 
+completamente federato a quello completamente centralizzato influiscono
+sulle performance del modello allenato.
+Lo studio è stato condotto su due dataset di benchmark, il FEMNIST e 
+l'UCI Human Activity Recognition (HAR) e permettendo di analizzare sia 
+una CNN (Convolutional Neural Network) e una MLP (Multi Layer Perceptron)
+entrambe di dimensioni contenute. 
+Sono state provate diverse combinazioni
+di percentuali di condivisione dei dataset (da 0\%, setting completamente
+federato al 100\%, setting completamente centralizzato), di strategie 
+di condivisione dei dati (scegliendo alcuni client di cui rendere i 
+dataset condivisi o prendendo alcuni elementi dai dataset di tutti i 
+client) e di diversi algoritmi di ottimizzazione.
+I risultati sperimentali verificano che alte performance sono raggiungibili
+anche in contesti completamente federati, anche se al costo di un 
+maggiore numero di cicli di training.
+\end{abstract}
+
+
+\tableofcontents
+
+\input{chapters/introduction}
+\input{chapters/fl}
+\input{chapters/dataset}
+\input{chapters/methodology}
+\input{chapters/results}
+\input{chapters/improvements}
+\input{chapters/conclusion}
+
+% Bibliography
+\bibliographystyle{plainnat}  % Use numeric citation style
+\bibliography{references}     % references.bib file
+
+\end{document}
