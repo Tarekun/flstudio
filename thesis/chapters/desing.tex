@@ -1,0 +1,153 @@
+\chapter{Progettazione}
+In questo capitolo vengono introdotti e descritti i problemi affrontati 
+e le tecniche utilizzate in questo studio. La prima sezione descrive 
+il problema che si vuole studiare: l'ibridazione dall'apprendimento 
+federato a quello centralizzato. Le due sezioni successive invece 
+descrivono i dataset di benchmark che sono stati scelti per studiare 
+il problema.
+
+
+\section{Il problema}
+In questo studio si vuole studiare il federated learning ibrido,
+analizzando come variano le performance di una rete neurale se è 
+allenata in modo completamente federato, completamente centralizzato 
+o con una qualche via di mezzo ibrida. Per questo sono stati presi in
+considerazione due dataset di benchmark federati il FEMNIST, 
+un dataset di computer vision, e l'UCI HAR, un dataset di human activity
+recognition, descritti nelle sezioni successive.
+
+Un punto fondamentale della scelta degli iperparametri delle reti o 
+del processo di training è quello di 
+mantenerli volutamente subottimali per poter vedere e apprezzare il 
+miglioramento di performance dato dalla maggiore condivisione dei 
+dataset locali. Questo motiva la scelta di modelli di dimensione 
+ridotta, la scelta di mantenere una funzione di attivazione, sì 
+famose ed efficace, ma comunque migliorabile come la ReLU o la scelta 
+della classica Creoss Entropy Loss come funzione di costo, che sono 
+sempre state usate in tutti gli esperimenti presentati.
+
+
+\section{FEMNIST}
+\subsection{Origine}
+Il famoso dataset MNIST (Modified National Institute of Standards and
+Technology), l'Hello World del Machine Learning, nasce nel 1994 creato 
+da LeCun et al.~\cite{lecun1998mnist} partendo dai un altro dataset 
+del NIST.
+Il MNIST è stato creato a partire dai dataset SD-1 e SD-3 (Special
+Dataset). Lo SD-3 veniva usato come training set e conteneva immagini
+di cifre scritte a mano da impiegati dell'American Census Bureau,
+mentre lo SD-1, usato come test set, erano cifre scritte a mano da 
+studenti delle scuole superiori americane. Le cifre degli studenti
+erano però scritte con una calligrafia più difficile da leggere, rendendo più 
+difficile trarre conclusioni sulle capacità del modello alla fine del
+training. Per questo motivo è stato creato un unico dataset, l'MNIST 
+che contiene un totale di 60'000 immagini di cifre sia degli studenti
+che degli impiegati dell'American Census Bureau.
+
+L'EMNIST (Extended MNIST) è un'estensione del dataset originale,
+pubblicata nel 2017 da Cohen et al.~\cite{cohen2017emnist} nata 
+per rendere il problema più difficile, viste le performance altissime
+che le CNN ottengono con poche epoche di training sul MNIST originale.
+Nasce dall'unione di altri dataset gestiti dal NIST, include cifre e
+anche lettere sia maiuscole che minuscole, per un totale di 62 classi.
+L'MNIST originale include cifre scritte da circa 250 persone diverse,
+mentre l'EMNIST contiene dati da 3597 persone diverse e un totale di 
+814'255 sample diversi.
+
+Per finire, il FEMNIST (Federated EMINST)
+viene introdotto in Caldas et al.~\cite{caldas2019femnist}
+ed è un dataset che include tutti i sample dell'EMNIST partizionati
+per scrittore originale, in modo da poter essere utilizzato in contesti
+di apprendimento federato, in cui ogni client esegue il training non su
+tutti i sample dell'EMNIST, ma solo quelli dello scrittore originale
+corrispondente.
+
+\subsection{Struttura}
+Come tutti i suoi predeccessori, il FEMNIST è un dataset che contiene
+immagini di 28x28 pixel in greyscale, quindi ad un unico canale. Le
+cifre e lettere sono tutte centrate nell'immagine in base centro di 
+massa dei pixel del carattere.
+Il dataset originale è stato costruito da, tra gli 
+altri, dipendenti di google e come tale è stato pensato per funzionare
+nativamente con Tensorflow. La repository originale per generare il
+dataset può essere trovata su github ~\cite{leaf_repo}. Dato che però
+il codice per questi esperimenti è stato scritto nel framework di PyTorch,
+seguendo il dataset loader indicato su Papers with Code ~\cite{femnist_pwc},
+per generare il dataset è stata usata la repository di Xiao Chenguang 
+~\cite{femnist_hdf5}, che permette di generare un file \texttt{.hdf5} contenente
+l'intero dataset, potendo anche scegliere se includere tutti i caratteri
+o solo le cifre come nel MNIST originale. 
+
+
+\subsection{Rete Neurale}
+Per questo dataset, essendo un problema di computer vision, è stata
+usata una CNN (Convolutional Neural Network). Il motivo per cui questa 
+architettura di rete neurale è così efficace nei problemi di image 
+classification o semantic segmentation è che implementa nativamente 
+un'invarianza rispetto alla posizione relativa che gli oggetti 
+osservati nelle immagini 
+di input. Ad esempio, dato un filtro che delinea il contorno di un 
+viso nella sua feature map, se tale viso viene tralsato di qualche 
+pixel nell'immagine originale, il filtro delineerà un contorno nella 
+featuer map traslato in modo equivalente (equivarianza). Componendo 
+layer convoluzionali e facendoli seguire da layer lineari che calcolano 
+la classificazione delle immagini si ottiene un'effettiva invarianza 
+nella classificazione rispetto alla posizione degli oggetti classificati 
+nell'immagine originale. La rete usata è di dimensioni ridotte con 2 
+layer convoluzionali seguiti da uno lineare. L'implementazione di questa 
+rete è indicata nel capitolo 4.
+
+
+\section{UCI HAR}
+\subsection{Struttura}
+L'UCI HAR (University of California Irvine -
+Human Activity Recognition) è un dataset diverso dal FEMNIST. In primis
+non è un dataset di computer vision, ma di human activity recognition.
+Il dataset è stato introdotto in ~\cite{Anguita2013APD} e la fonte dei
+dati sono accellerometri e giroscopi di smartphones.
+
+Negli esperimenti condotti 30 volontari di età compresa tra i 19 e i 48 anni
+hanno compiuto diverse azioni avendo uno smartphone legato in vita 
+usato per registrare l'accelerazione lineare e la velocità 
+angolare 3-assiale. Lo smartphone usato è un Samsung Galaxy SII, le 
+misurazioni sono state fatte ad una frequenza di 50Hz e le azioni compiute
+sono il camminare, salire o scendere le scale, sedersi, alzarsi e 
+sdraiarsi, per un totale di 6 classi di azioni diverse.
+I sample del dataset non sono però sequenze di misurazioni; dopo 
+aver misurato velocità e accelerazione, grandezze vettoriali 3-dimensionali,
+e aver rimosso rumore dai segnali con un filtro Butterworth low-pass 
+~\cite{butterworth_filter}, è stata fatta un'aggregazione di tutti i 
+valori in una finestra temporale di 2.56s. Tale aggregazione produce 
+561 valori reali che vengono organizzati in un unico feature vector 
+che funziona da input del modello. La label è l'azione che stava venendo
+compiuta in quei 2.56 secondi.
+Scaricati i file del dataset, disponibile sul sito della 
+University of California Irvine ~\cite{uci_har_ds}, sui file 
+\texttt{README.txt} e \texttt{features\_info.txt}
+si posso trovare informazioni dettagliate sul 
+processing fatto per estrarre le 561 feature, mentre su youtube 
+~\cite{har_measuring_video} è disponibile un video che mostra il 
+processo di registrazione delle azioni.
+
+Il dataset include un totale di 10299 vettori di feature che sono stati
+già divisi randomicamente 
+in un test set del 30\% del totale e in un training set 
+che contiene il 70\% delle feature.
+
+
+\subsection{Reti neurale}
+Dato che l'UCI HAR è un dataset i cui sample sono feature vector di 
+diverse misurazioni aggregate senza una particolare struttura, per 
+questo problema è stato usata una semplice MLP (Multi Layer Perceptron).
+Questo dataset è stato trattato sia a partizionamento orizzontale che 
+a verticale e sono stati usati due modelli diversi per i due esperimenti.
+Nel caso del partizionamento orizzontale si è usato un MLP con un solo 
+layer nascosto da 50 neuroni. In esperimenti preliminari si sono provate 
+diverse dimensioni per questo modello e poi si è provati a ridurlo 
+quanto possibile.
+Nel caso del partizionamento verticale ogni client è stato dotato di un 
+MLP con un layer nascosto per calcolare l'encoding delle feature e il
+sever di un altro MLP con un layer nascosto per compiere la 
+classificazione, per un modello totale che 
+comprende 5 layer in tutto (input, hidden layer dei client, encoding 
+layer, hidden layer del server, output layer).

@@ -4,14 +4,16 @@ e vengono discusse le scelte implementative.
 La prima sezione è dedicata agli strumenti utilizzati. Per prima cosa
 viene introdotto PyTorch, il framework usato per 
 definire le reti neurali usate, dopo viene introdotto Flower un 
-framework per implementare e simulare sistemi di federated learning.
-Infine viene introdotto anche Hydra un framework per configurare 
+framework per implementare e simulare sistemi di federated learning e 
+per ultimo viene introdotto anche Hydra un tool per configurare 
 molteplici esperimenti di datascience in python comodamente.
 
 La seconda sezione invece è dedicata alle implementazioni fatte per 
-questi esperimenti. In primis, vengono descritti i modelli usati per
-i diversi. Successivamente viene discussa l'ibridazione implementata 
-dal modello di 
+questi esperimenti. In primis, viene indicato il codice utilizzato per 
+caricare i dati dalle fonti menzionate nel capitolo precedente.
+Successivamente vengono descritti i modelli usati per
+i diversi esperimenti. Infine viene discussa l'ibridazione 
+implementata dal modello di 
 apprendimento federato a quello centralizzato, condividendo acluni 
 sample dei dataset dei client in un unico dataset centralizzato.
 
@@ -91,6 +93,143 @@ estremamente conveniente quando si vogliono provare diversi iperparametri
 del proprio modello di machine learning, come in questo studio.
 
 \section{Le implementazioni}
+
+\subsection{Data loading}
+\subsubsection{FEMNIST}
+Come anticipato il FEMNIST è stato scaricato usando la repository di 
+Xiao Chenguang ~\cite{femnist_hdf5}. Tale repository include uno script 
+per generare due file, \texttt{write\_digits.hdf5} e \texttt{write\_all.hdf5},
+per la versione dei dataset con e senza le immagini delle lettere.
+Tale file, una volta letto, contiene un dizionario le cui chiavi sono 
+id degli scrittori originali e gli elementi sono un'ulteriore dizionario 
+con le due chiavi \texttt{"images"} e \texttt{"labels"} per i dati 
+dell'immagine e il numero della rispettiva classe.
+
+Quella che segue è la funzione
+utilizzata per aprire il dataset \texttt{.hdf5} creato 
+e istanziare i \texttt{Dataset} di PyTorch per ognuno dei client usati nella
+simulazione:
+\clearpage
+\begin{lstlisting}
+    def _get_femnist_datasets(
+        num_writers: int,
+        val_ratio: float,
+        test_ratio: float,
+        only_digits: bool = False,
+    ) -> tuple[list[Dataset], list[Dataset], list[Dataset]]:    
+        dataset_file = "write_digits.hdf5" if only_digits else "write_all.hdf5"
+        full_dataset = h5py.File(f"data/{dataset_file}", "r")
+        writers = sorted(full_dataset.keys())[:num_writers]
+        train_sets = []
+        val_sets = []
+        test_sets = []
+    
+        for writer in writers:
+            images = full_dataset[writer]["images"][:]
+            labels = full_dataset[writer]["labels"][:]
+            client_dataset = FemnistWriterDataset(
+                images, labels, transform=femnist_transform
+            )
+    
+            train_subset, val_subset, test_subset = _split_dataset(
+                client_dataset, val_ratio, test_ratio
+            )
+            train_sets.append(train_subset)
+            val_sets.append(val_subset)
+            test_sets.append(test_subset)
+    
+        full_dataset.close()
+        return train_sets, val_sets, test_sets
+\end{lstlisting}
+Tutti gli argomenti di questa funzione sono controllabili tramite la
+configurazione Hydra usata per eseguire lo script. Si noti come
+l'implementazione supporti anche un test di validazione per una 
+possibile implementazione di early-stopping. I dataset di validazione 
+sono però stati ignorati nel corso degli esperimenti e questa feature 
+è rimasta da esperimenti preliminari.
+
+\subsubsection{HAR}
+Il dataset UCI HAR è distribuito direttamente dalla University of 
+California Irvine~\cite{uci_har_ds}. Scaricato e decompresso il 
+dataset, si possono trovare i dati separati nelle due cartelle 
+\texttt{test} e \texttt{train}. Entrambe le cartelle contengono un 
+file per le feature, un file per l'indice numerico della classe e un 
+file con l'id della persona che ha compiuto l'azione. I sample sono 
+scritti su questi file \texttt{.txt} riga per riga in modo 
+corrispondente (la prima riga nel file di labels è la label per il 
+feture vector nella prima riga del file di feature, che è stata 
+compiuta dalla persona con id che compare nella prima riga). Per 
+organizzare queste informazioni in \texttt{Dataset} PyTorch strutturato 
+si è resa necessaria una funzione apposita che riassociasse le 
+informazioni tra questi file.
+
+Quelle che seguono sono le funzioni utilizzate per aprire i file del 
+dataset come sono forniti dall'UCI i Dataset di PyTorch per 
+ognuno dei client 30 e partizionare correttamente i sample:
+\clearpage
+\begin{lstlisting}
+def _load_har_dataset(train: bool):
+    variant = "train" if train else "test"
+    full_features = [[] for _ in range(30)]
+    full_labels = [[] for _ in range(30)]
+
+    # get subject ids for measurements
+    with open(f"data/subject_{variant}.txt", "r") as subject_file:
+        subject_ids = [int(line.strip()) - 1 for line in subject_file]
+    # get features and match them with the user
+    with open(f"data/X_{variant}.txt", "r") as feature_file:
+        for i, line in enumerate(feature_file):
+            features = [float(num) for num in line.split()]
+            full_features[subject_ids[i]].append(features)
+    # get labels and match them with the user
+    with open(f"data/y_{variant}.txt", "r") as label_file:
+        for i, line in enumerate(label_file):
+            label = int(line)
+            one_hot = torch.zeros(6, dtype=torch.float32)
+            one_hot[label - 1] = label
+            full_labels[subject_ids[i]].append(one_hot)
+
+    if train:
+        return full_features, full_labels
+    # flatten in one dataset for testing
+    else:
+        return [
+            feature for user_features in full_features for feature in user_features
+        ], [label for user_labels in full_labels for label in user_labels]
+
+
+def _get_har_datasets() -> tuple[list[Dataset], Dataset]:
+    train_features, train_labels = _load_har_dataset(True)
+    test_features, test_labels = _load_har_dataset(False)
+
+    client_datasets = [
+        HarDataset(
+            features=torch.tensor(train_features[cid], dtype=torch.float32),
+            labels=train_labels[cid],
+        )
+        for cid in range(len(train_features))
+        # some clients dont include measurements in the trainset
+        if len(train_features[cid]) > 0
+    ]
+    test_dataset = HarDataset(
+        torch.tensor(test_features, dtype=torch.float32), test_labels
+    )
+    return client_datasets, test_dataset
+\end{lstlisting}
+
+In questo caso la logica per istanziare il dataset federato è stata 
+divisa in due funzioni in quanto, diversamente dal FEMNIST in cui il 
+dataset originale è già partizionato per client, in questo caso c'è 
+bisogno di (i) aprire 3 file diversi \texttt{subject\_\{variant\}.txt}, 
+\texttt{X\_\{variant\}.txt} e \texttt{y\_\{variant\}.txt} e riassociare 
+i dati tra loro e (ii) instanziare i \texttt{Dataset} di PyTorch.
+La funzione \texttt{\_load\_har\_dataset} si occupa di fare la prima tasks,
+mentre \texttt{\_get\_har\_datasets} si occupa di istanziare correttamente le classi 
+\texttt{Dataset}. Si noti che i dataset locali sono partrizionati per 
+utente, mentre il dataset di test è un unico dataset con sample di 
+tutti gli utenti.
+
+
 \subsection{I modelli}
 Per tutti e 3 gli esperimenti condotti sono stati utilizzati modelli 
 diversi.
