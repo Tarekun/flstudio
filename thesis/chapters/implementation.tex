@@ -22,7 +22,8 @@ sample dei dataset dei client in un unico dataset centralizzato.
 \subsection{PyTorch}
 PyTorch ~\cite{pytorch} è una libreria open-source estremamente popolare e flessibile 
 per programmare ed allenare modelli di Deep Learning.
-Siluppata inizialmente dal FAIR lab (Facebook's AI Reasearch), offre
+Siluppata inizialmente dal FAIR lab (originariamente Facebook's AI
+Reasearch, oggi Foundational AIR), offre
 un'API dichiarativa in python per costruire architetture di reti 
 neurali, lasciando totale controllo al programmatore sul passo di 
 feed forward di dati, facilitando la rapida sperimentazione di 
@@ -255,13 +256,7 @@ class CnnEmnist(nn.Module):
         self.conv1 = nn.Conv2d(
             in_channels=1,
             out_channels=32,
-            ke
-            \begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-                \centering
-                \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/sgd/results-h0_2-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}  % Adjust width as needed
-                \caption{Caption describing the image}
-                \label{fig:femnists2sgd}
-            \end{figure}rnel_size=3,
+            kernel_size=3,
             padding=1
         )
         self.conv2 = nn.Conv2d(

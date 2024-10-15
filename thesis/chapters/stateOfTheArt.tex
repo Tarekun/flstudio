@@ -114,11 +114,15 @@ in modo da migliorare le performance del modello, pur mantenendo lo
 spostamento di dati al minimo. Quest'interesse è motivato da risultati 
 empirici come quelli di Zhao et al. ~\cite{zhao2018flniid} che hanno 
 visto come condividendo solo il 5\% dei dati si può ottenere un 
-miglioramento del 30\% sulla precisione del modello.
+miglioramento del 30\% sulla precisione del modello. Questo studio 
+però utilizza il dataset CIFAR, un dataset di immagini per apprendimento 
+centralizzato e i dataset locali vengono prodotti partizionando il 
+dataset originale con un alto livello di class imbalance tra i 
+sample per studiarne gli effetti. 
 
 Se ci si pone in un contesto di federated learning ibrido, anche qua,
 possiamo avere diversi modelli di condivisione dei dati. Un approccio 
-può essere quello di una condivisione client-based in cui alcuni client 
+può essere quello di una condivisione \textit{client-based} in cui alcuni client 
 condividono interamente i loro dataset. La selezione dei client può 
 essere fatta sia in modo centralizzato, dallo stesso server che gestisce 
 il modello globale, che su base volontaria in cui un utente può decidere 
@@ -126,7 +130,15 @@ spontaneamente di condividere i propri dati.
 Un'altra alternativa può essere quella di stabilire un certo quantitativo,
 come una percentuale fissata o un numero costante di sample, che ogni 
 client deve contribuire al dataset globale, mantenendo il resto dei 
-propri dati privati.
+propri dati privati. 
+In quest'area Elbir et al. in~\cite{Elbir2020HybridFA, Elbir2021AHA} 
+propongono un modello 
+in cui i client con scarse capacità computazionali possono condividere il 
+loro dataset con il server in modo da delegare al server il training sul 
+proprio dataset. Questo studio però esplora solo questa strategia di 
+condivisione dei dati. In quest'elaborato invece si esplorano 
+entrambe le strade, vedendo anche come l'approccio \textit{client-based} 
+sia in realtà il meno efficace dei due.
 
 
 \section{Strategie di aggregazione}
@@ -225,7 +237,8 @@ stessi dataset di benchmark. Esistono infatti diversi studi comparativi
 di diverse strategie come Kairouz et al.  ~\cite{kairouz2021flOpenProblems}.
 
 
-\section{Vantaggi}
+\section{Pro e contro}
+\subsubsection{Vantaggi}
 Il federated learning offre vantaggi significativi sia in termini di 
 privacy che in termini di costo di infrastruttura. 
 Uno dei primi  vantaggi è la possibilità poter allenare un modello 
@@ -241,7 +254,7 @@ il modello ed eliminando il carico sulla rete per trasmettere tali
 dati, fattori che possono diventare significativi se se il learning è
 fatto su larga scala come ad esempio sulla miriade di dispositivi IoT.
 
-\section{Problemi}
+\subsubsection{Problemi}
 Nonostante i suoi vantaggi, il federated learning presenta anche delle 
 difficoltà.
 In primis, c'è il fatto che dato che i dati locali sono tipicamente 
@@ -265,25 +278,8 @@ dati sensibili attraverso un \textit{inference attack} a partire
 dai parametri aggiornati del modello o dal feature embedding. Questi 
 problemi possono essere risolti con tecniche come la differential 
 privacy o l'homomorphic encryption, ma questo comporta un costo 
-computazionale maggiore dell'intero processo e può degradare ancora 
+computazionale maggiore dell'intero processo e può degradare ulteriormente 
 le performance del modello.
 In utlimo, il federated learning rimane un modello di computazione 
 distribuita e come tale pone tutte le difficoltà di comunicazione e 
 sincronizzazione tipiche di quest'approccio.
-
-
-\section{Sintesi}
-Conclundendo, il federated learning è un approccio al machine 
-learning che offre svariati vantaggi, dalla distribuzione del 
-calcolo per l'allenamento, alla personalizzazione del comportamento 
-del modello in funzione dell'utente, alla protezione della 
-privacy dei dati in contesti di dati sensibili.
-
-Tuttavia questi benefici si ottengono al costo di dover gestire
-un sistema distribuito, invece di un unico server cloud, e 
-soprattutto diventa una grande fonte di eterogeneità dei dati,
-rendendoli non-IID e limitando le performance del modello 
-allenato. Per tale motivo il federated learning rimane una 
-tecnica potente ma da utilizzare con attenzione nei contesti 
-in cui risulta utile o necessario, come ad esempio nel caso in 
-cui esistano regolamentazioni a protezione dei dati.
