@@ -212,7 +212,7 @@ ogni client. Ogni client calcola l'aggiornamento dei suoi parametri come:
 dove \(\eta\) è il learning rate e \(L^k\) è la loss function del 
 client \(k\). Dopodiché il server aggiornerà il modello globale con:
 \[
-\theta_{t+1} = \theta_t + \frac{1}{K} \sum_{k=1}{K} \Delta\theta_{t+1}^k
+\theta_{t+1} = \theta_t + \frac{1}{K} \sum_{k=1}^{K} \Delta\theta_{t+1}^k
 \]
 
 \subsection{Summary}

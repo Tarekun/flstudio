@@ -45,39 +45,66 @@ mantenendo un accuracy sul dataset di test intorno al 6\%.
 Il dataset FEMNIST è quello dei due che si è dimostrato più difficile 
 da imparare e su cui è più notevole il miglioramento di performance 
 dato dalla condivisione dei dati (circa il 10\% dal setting totalmente
-federato a quello totalmente centralizzato). La figura \ref{fig:femnists0sgd}
-mostra i risultati del modello ad ogni round di training. Come si può 
-vedere le performance raggiungono una precisione del 81.43\% sul trainset 
+federato a quello totalmente centralizzato). La figura \ref{fig:femnistsxtm}
+mostra i risultati del training ai due estremi di ibridazione:
+\ref{fig:femnistsxtm-a} mostra i risultati dell'apprendimento federato,
+mentre \ref{fig:femnistsxtm-b} quelli dell'apprendimento centralizzato.
+\begin{figure}[hb]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_0-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+        \label{fig:femnistsxtm-a}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_9-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+        \label{fig:femnistsxtm-b}
+    \end{subfigure}
+    
+    \caption{
+        Risultati del del training per ogni round. A sinistra (a) si può 
+        vedere l'apprendimento federato, a destra (b) quello centralizzato.
+        Algoritmo di ottimizzazione (SGD) e metodo di condivisione 
+        (\texttt{share-disjoint}) sono tenuti fissati.
+    }
+    \label{fig:femnistrandom}
+\end{figure}
+
+
+Come si può vedere nel caso federato 
+le performance raggiungono una precisione del 81.43\% sul testset 
 e si può anche notare che il modello non è ancora arrivato a convergenza.
 Continuando il training per ulteriori round possiamo quindi aspettarci 
 di poter migliorare le prestazioni ancora.
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/sgd/results-h0_0-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:femnists0sgd}
-\end{figure}
+Il modello centralizzato arriva ad un'accuracy maggiore di un 9\% e 
+soprattutto bastano 2 round per ottenere risultati sopra al 90\%.
 
 Un primo caso di chiara convergenza intorno all'88\% lo si vede quando 
 si inizia a condividere il 20\% dei dataset come mostrato in figura 
-\ref{fig:femnists2sgd}, dove si può vedere che il modello smette di 
-imparare intorno al decimo round.
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+\ref{fig:femnists2sgd}, dove si può vedere che l'accuracy del modello 
+smette di migliorare intorno al decimo round.
+\begin{figure}[hb]  % h: here, t: top, b: bottom, p: page
     \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/sgd/results-h0_2-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:femnists2sgd}
-\end{figure}
-
-L'apprendimento diventa sempre più veloce e raggiunge performance 
-finali migliori man mano che vengono condivisi più dati, fino all'ultimo 
-esperimento fatto con un unico dataset globale condiviso, i cui risultati 
-sono in figura \ref{fig:femnists9sgd}.
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/sgd/results-h0_9-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:femnists9sgd}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_2-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+        \label{fig:femnists2sgd}
+    \end{subfigure}
+    \hfill\begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_5-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+        \label{fig:feministu5adam}
+    \end{subfigure}
+    
+    \caption{
+        Risultati del training diversi. Il grafico a sinitra (a) 
+        mostra i risultati di una condivisione \texttt{share-disjoint}
+        al 20\%, mentre quello a destra (b) usa il metodo 
+        \texttt{unify} al 50\%.
+    }
+    \label{fig:femnistadam}
 \end{figure}
 
 Dei due ottimizzatori provati, SGD è quello che performa meglio: è più 
@@ -87,33 +114,40 @@ utilizzato AdamW e il metodo di condivisione \texttt{unify} mostrano
 sempre intervalli di incertezza enormi, come quello riportato in 
 figura \ref{fig:feministu5adam}. La situazione è analoga anche usando 
 la condivisione \texttt{share-disjoint} fino a che il grado di 
-condivisione non raggiunge un minimo del 30\%, come mostrato nelle 
-figure \ref{fig:feminists2adam} e \ref{fig:feminists3adam}, e anche 
-dopo oltre il 30\% non è garantita una maggiore stabilità, come ha 
+condivisione non raggiunge un minimo del 40\%, come mostrato nelle 
+figure \ref{fig:feminists3adam} e \ref{fig:feminists4adam}, e anche 
+dopo oltre il 40\% non è garantita una maggiore stabilità, come ha 
 rivelato l'esperimento con 80\% di condivisione (figura \ref{fig:feminists8adam}).
 \begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
     \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/adamw/results-h0_5-hm_unify-lr0_01-e6-torch_optim_AdamW.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:feministu5adam}
-\end{figure}
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_3-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+        \caption{Figura 5.3(a)}
+        \label{fig:feminists3adam}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_4-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+        \caption{Figura 5.3(b)}
+        \label{fig:feminists4adam}
+    \end{subfigure}
     \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/adamw/results-h0_2-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:feminists2adam}
-\end{figure}
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/adamw/results-h0_3-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:feminists3adam}
-\end{figure}
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/adamw/results-h0_8-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:feminists8adam}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_8-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+        \caption{Figura 5.3(c)}
+        \label{fig:feminists8adam}
+    \end{subfigure}
+    
+    \caption{
+        Diversi risultati di training con AdamW e metodo \texttt{share-disjoint}.
+        Il primo (a) usa una condivisione del 30\%, il secondo (b) al 40\%
+        il minimo per cui AdamW ha un andamento stabile, l'ultimo (c) 
+        mostra un altro training instabile con condivisione all'80\%.
+    }
+    \label{fig:femnistsxtm}
 \end{figure}
 
 Guardando questi grafici si può notare come il comportamento medio non sia 
@@ -135,23 +169,278 @@ da tutti i dataset locali, garantisce di coprire, almeno in parte,
 tutte le peculiarità nei dati di tutti i client. In questo dataset 
 questo effetto non è particolarmente marcato se non con l'AdamW o nei 
 primissimi round di training con basso gradi di condivisione in SGD.
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/sgd/results-h0_1-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:femnists2sgd}
-\end{figure}
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/femnist-horizontal/sgd/results-h0_1-hm_unify-lr0_01-e6-torch_optim_SGD.png}  % Adjust width as needed
-    \caption{Caption describing the image}
-    \label{fig:femnists2sgd}
-\end{figure}
 
 Quella che segue è una lista dei grafici di tutti gli esperimenti
 che sono stati svolti.
-TODO mettere le immagini
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_0-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_0-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_1-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_1-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_2-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_2-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_3-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_3-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_4-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_4-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_5-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_5-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_6-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_6-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_7-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_7-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_8-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_8-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_9-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_9-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_10-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/sgd/results-h0_10-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\clearpage
+Ora sono riportati i risultati di AdamW.
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_0-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_0-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_1-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_1-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_2-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_2-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_3-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_3-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_4-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_4-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_5-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_5-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_6-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_6-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_7-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_7-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_8-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_8-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_9-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_9-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_10-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/femnist-horizontal/adamw/results-h0_10-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+    
 
+\clearpage
 \section{HAR - HFL}
 In questa sezione vengono descritti gli esperimenti fatti con il dataset
 UCI HAR con il normale partizionamento orizzontale e vengono descritti 
@@ -184,26 +473,41 @@ soli 50 neuroni.
 \subsection{Risultati}
 L'UCI HAR è il dataset che ha mostrato le performance migliori.
 Innanzitutto nonostante la dimensione piuttosto contenuta del modello
-utilizzato si è riscuti ad avere ottime prestazioni lo stesso, non 
+utilizzato si è riusciuti ad avere ottime prestazioni lo stesso, non 
 scendendo mai al di sotto del 90\% di accuracy e avvicinandosi al 
 95\% per gli esperimenti con maggior grado di ibridazione. Le 
 figure \ref{fig:hars0sgd} e \ref{fig:hars9sgd} mostrano i risultati 
 ai due estremi di ibridazione.
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+Come si può vedere anche in questo caso il modello centralizzato 
+richiede solo 2 round per superare il 50\% di accuracy e termina 
+l'apprendimento intorno al quinto round. Il modello federato invece
+richiede ben più round di training, superando il 90\% intorno al 
+quindicesimo round e termina con un 91.15\%.
+
+\begin{figure}[htp]  % h: here, t: top, b: bottom, p: page
     \centering
-    \includegraphics[width=0.8\textwidth]{../plots/har-horizontal/sgd/results-h0_0-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
-    \caption{Caption describing the image}
-    \label{fig:hars0sgd}
-\end{figure}
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/har-horizontal/sgd/results-h0_9-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
-    \caption{Caption describing the image}
-    \label{fig:hars9sgd}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_0-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+        \caption{0\% Condivisione}
+        \label{fig:hars0sgd}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_9-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+        \caption{100\% Condivisione}
+        \label{fig:hars9sgd}
+    \end{subfigure}
+    
+    \caption{
+        Risultati del training per ogni round. A sinistra (a) si può 
+        vedere l'apprendimento federato, a destra (b) quello centralizzato.
+        Algoritmo di ottimizzazione (SGD) e metodo di condivisione 
+        (\texttt{share-disjoint}) sono tenuti fissati.
+    }
 \end{figure}
 
-Come si può vedere in questo caso il modello riesce ad arrivare a 
-convergenza entro i 20 round di training prefissati.
 
 Una differenza interessante rispetto al FEMNIST è che in questo 
 caso AdamW si comporta sensibilmente meglio. Tanto per cominciare
@@ -218,24 +522,282 @@ metodo \texttt{unify} al 60\% di condivisione, mentre in figura
 stesse condizioni usando l'algoritmo AdamW. Come si può vedere 
 dagli intervalli di incertezza AdamW risulta più stabile in 
 queste condizioni.
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/har-horizontal/sgd/results-h0_6-hm_unify-lr0_01-e5-torch_optim_SGD.png}
-    \caption{Caption describing the image}
-    \label{fig:haru6sgd}
-\end{figure}
-\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
-    \centering
-    \includegraphics[width=0.8\textwidth]{../plots/har-horizontal/adam/results-h0_6-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
-    \caption{Caption describing the image}
-    \label{fig:haru6adam}
-\end{figure}
 
 Anche per questo dataset, qui di seguito si trovano i grafici dei
-risultati di tutti gli esperimenti condotti.
-TODO mettere le immagini
+risultati di tutti gli esperimenti condotti. La colonna di sinistra 
+riporta i risultati ottenuti con il metodo \texttt{share-disjoint}, 
+quella di destra \texttt{unify}. Sono prima riportati i risultati 
+di SGD.
+
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_0-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_0-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_1-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_1-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_2-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_2-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_3-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_3-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_4-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_4-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_5-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_5-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_6-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_6-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_7-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_7-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_8-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_8-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_9-hm_share-disjoint-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_9-hm_unify-lr0_01-e5-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_10-hm_share-disjoint-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/sgd/results-h0_10-hm_unify-lr0_01-e6-torch_optim_SGD.png}
+    \end{subfigure}
+\end{figure}
+\clearpage
+I seguenti sono i risultati di AdamW.
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_0-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_0-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_1-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_1-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_2-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_2-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_3-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_3-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_4-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_4-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_5-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_5-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_6-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_6-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_7-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_7-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_8-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_8-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_9-hm_share-disjoint-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_9-hm_unify-lr0_01-e5-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
+\begin{figure}[htbp]  % h: here, t: top, b: bottom, p: page
+    \centering
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_10-hm_share-disjoint-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../plots/har-horizontal/adam/results-h0_10-hm_unify-lr0_01-e6-torch_optim_AdamW.png}
+    \end{subfigure}
+\end{figure}
 
 
+\clearpage
 \section{HAR - VFL}
 L'ultimo esperimento fatto è quello del UCI HAR con partizionamento 
 verticale delle feature.
