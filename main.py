@@ -7,7 +7,7 @@ from flwr.simulation import start_simulation
 from data import get_horizontal_dataloaders, get_vertical_dataloaders
 from client import get_horizontal_client_generator, get_vertical_client_generator
 from training import get_horizontal_evaluation_fn
-from visualization import plot_simulations
+from visualization import plot_simulations, extract_metric_data, _format_filename
 from strategy import *
 from models import *
 
@@ -88,6 +88,13 @@ def vertical_simulation(cfg: DictConfig):
     return history
 
 
+def save_histories(histories: list[tuple[float, float]], filename: str):
+    import json
+
+    with open(filename, "w") as file:
+        json.dump(histories, file)
+
+
 @hydra.main(config_path="conf", config_name="femnist", version_base="1.2")
 def main(cfg: DictConfig):
     histories = []
@@ -100,15 +107,20 @@ def main(cfg: DictConfig):
         print(OmegaConf.to_yaml(cfg))
 
         if partitioning == "horizontal":
-            histories.append(horizontal_simulation(cfg))
+            history = horizontal_simulation(cfg)
         elif partitioning == "vertical":
-            histories.append(vertical_simulation(cfg))
-
+            history = vertical_simulation(cfg)
         else:
             raise ValueError(
                 f"Unsupported partitioning selected: {partitioning}. Only 'horizontal' and 'vertical' are accepted"
             )
 
+        loss_list = extract_metric_data(history.metrics_centralized["loss"])
+        accuracy_list = extract_metric_data(history.metrics_centralized["accuracy"])
+        histories.append([loss_list, accuracy_list])
+
+    print("Dumping histories...")
+    save_histories(histories, f"{_format_filename(cfg)}.hstr")
     print("Plotting results...")
     plot_simulations(
         histories,

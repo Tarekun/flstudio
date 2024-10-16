@@ -24,7 +24,7 @@ def _format_filename(cfg: DictConfig):
     name += f"-{cfg.train_cfg.optimizer._target_}"
 
     name = name.replace(".", "_")
-    return f"{name}.png"
+    return f"{name}"
 
 
 def _legend_text(cfg: DictConfig):
@@ -103,7 +103,7 @@ def create_single_plot(
     plt.close()
 
 
-def average_metrics(num_rounds: int, histories):
+def average_metrics(num_rounds: int, histories: list):
     loss_sum = [0.0] * num_rounds
     accuracy_sum = [0.0] * num_rounds
     min_accuracy = [float("inf")] * num_rounds
@@ -111,8 +111,9 @@ def average_metrics(num_rounds: int, histories):
     num_histories = len(histories)
 
     for history in histories:
-        loss_list = extract_metric_data(history.metrics_centralized["loss"])
-        accuracy_list = extract_metric_data(history.metrics_centralized["accuracy"])
+        # loss_list = extract_metric_data(history.metrics_centralized["loss"])
+        # accuracy_list = extract_metric_data(history.metrics_centralized["accuracy"])
+        loss_list, accuracy_list = history
 
         # add the values to the corresponding round in the sum lists
         for i in range(num_rounds):
@@ -148,7 +149,7 @@ def plot_simulations(
 
     base = os.path.join(PLOTS_DIR, dir_name)
     os.makedirs(base, exist_ok=True)
-    filename = _format_filename(cfg)
+    filename = f"{_format_filename(cfg)}.png"
 
     create_single_plot(
         f"{base}/{filename}",
