@@ -96,6 +96,30 @@ nella classificazione rispetto alla posizione degli oggetti classificati
 nell'immagine originale. La rete usata è di dimensioni ridotte con 2 
 layer convoluzionali seguiti da uno lineare. L'implementazione di questa 
 rete è indicata nel capitolo 4.
+\begin{lstlisting}
+class CnnEmnist(nn.Module):
+    def __init__(self, num_classes: int):
+        super(CnnEmnist, self).__init__()
+        # reused pooling layer
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        # 2 convolutional layers
+        self.conv1 = nn.Conv2d(
+            in_channels=1,
+            out_channels=32,
+            kernel_size=3,
+            padding=1
+        )
+        self.conv2 = nn.Conv2d(
+            in_channels=32,
+            out_channels=64,
+            kernel_size=3,
+            padding=1,
+        )
+        # fully connected layer
+        self.fc = nn.Linear(64 * 7 * 7, 512)
+        # output layer
+        self.classification = nn.Linear(512, num_classes)
+\end{lstlisting}
 
 
 \section{UCI HAR}
@@ -151,3 +175,22 @@ sever di un altro MLP con un layer nascosto per compiere la
 classificazione, per un modello totale che 
 comprende 5 layer in tutto (input, hidden layer dei client, encoding 
 layer, hidden layer del server, output layer).
+\begin{lstlisting}
+class HarModel(nn.Module):
+    def __init__(self, num_classes: int):
+        super(HarModel, self).__init__()
+        self.fc1 = nn.Linear(561, 50)
+        self.fc2 = nn.Linear(50, num_classes)
+
+class ClientVerticalModel(nn.Module):
+    def __init__(self, num_features: int):
+        super(ClientVerticalModel, self).__init__()
+        self.input = nn.Linear(num_features, 50)
+        self.latent = nn.Linear(50, latent_vector_length)
+
+class ServerVerticalModel(nn.Module):
+    def __init__(self, num_clients, num_classes: int):
+        super(ServerVerticalModel, self).__init__()
+        self.input = nn.Linear(num_clients * latent_vector_length, 50)
+        self.output = nn.Linear(50, num_classes)
+\end{lstlisting}
