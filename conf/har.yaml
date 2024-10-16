@@ -2,7 +2,7 @@ defaults:
   - _self_
 
 partitioning: horizontal
-num_runs: 20
+num_runs: 10
 
 sim_cfg:
   num_rounds: 20
@@ -28,7 +28,7 @@ hydra:
   mode: MULTIRUN
   sweeper:
     params:
-      train_cfg.optimizer._target_: torch.optim.AdamW #, torch.optim.SGD
-      data_cfg.hybrid_ratio: 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 #, 1.0
+      data_cfg.hybrid_ratio: 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9
+      data_cfg.hybrid_method: unify, share-disjoint
   run:
     dir: .

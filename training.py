@@ -7,7 +7,7 @@ from collections import OrderedDict
 import hydra
 
 
-device = torch.device("cuda:0")
+device = torch.device("cpu")
 
 
 def validate(model: nn.Module, val_loader, train_cfg: DictConfig):

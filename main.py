@@ -95,7 +95,7 @@ def save_histories(histories: list[tuple[float, float]], filename: str):
         json.dump(histories, file)
 
 
-@hydra.main(config_path="conf", config_name="femnist", version_base="1.2")
+@hydra.main(config_path="conf", config_name="har", version_base="1.2")
 def main(cfg: DictConfig):
     histories = []
     partitioning = cfg.partitioning
