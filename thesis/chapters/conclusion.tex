@@ -1,1 +1,35 @@
 \chapter{Conclusione}
+In questo studio si è potuta verificare l'efficacia del 
+federated learning ibrido. La condivisione di una piccola parte dei 
+dataset locali può essere una strategia efficacie per affrontare le 
+difficoltà poste dal federated learning.
+
+I risultati dimostrano che condividere una parte dei dataset ha un 
+effetto positivo apprezzabile sulle performance del modello. Sono stati 
+considerati due dataset di due problemi fondamentalmente diversi -UCI HAR 
+e FEMNIST- a confermare il fatto che i risultati non siano una particolarità
+dello specifico problema o modello utilizzato. Il miglioramento di 
+performance è stato particolarmente notevole nel FEMNIST che si è rivelato 
+il dataset più complicato dei due. 
+
+Tuttavia rimane importante bilanciare in modo appropriato la condivisione 
+di dati, con la protezione della privacy ove necessario e informare 
+l'utente della condivisione in atto, comportamento virtuoso anche in 
+assenza di legislazione specifica come il GDPR.
+
+I due dataset diversi sono stati provati con diverse configurazioni: il 
+modello è rimasto lo stesso, ma è stato allenato con diversi algoritmi
+di ottimizzazione, diversi gradi di condivisione dei dataset e diverse 
+tecniche per la condivisione. I risultati mostrano che AdamW è un 
+algoritmo tendenzialmente più instabile, che miglioramenti delle 
+performance apprezzabili possono essere ottenuti con una condivisione 
+di non più del 20\% e che condividere pochi dati di ogni client è 
+permette un miglioramento più sicuro sulle performance rispetto al 
+selezionare alcuni client specifici.
+
+In conclusione, questa tesi contribuisce alla crescente mole di letteratura
+nel machine learning, in generale, e federated learning, nello specifico, 
+evidenziando il potenziale promettente di questo modello di apprendimento
+automatico. Lavori futuri potrebbero esplorare iperparametri diversi e più
+ottimali per provare ad allenare modelli \textit{compute optimal} oppure 
+studiare benchmark più complessi per performance \textit{state of the art}.
