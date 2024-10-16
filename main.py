@@ -95,10 +95,13 @@ def save_histories(histories: list[tuple[float, float]], filename: str):
         json.dump(histories, file)
 
 
-@hydra.main(config_path="conf", config_name="femnist", version_base="1.2")
+@hydra.main(config_path="conf", config_name="har", version_base="1.2")
 def main(cfg: DictConfig):
     histories = []
     partitioning = cfg.partitioning
+    train_loaders, test_loader = get_horizontal_dataloaders(cfg.data_cfg)
+    print(len(train_loaders))
+    print(len(train_loaders[0]))
 
     for i in range(cfg.num_runs):
         print(
@@ -106,17 +109,21 @@ def main(cfg: DictConfig):
         )
         print(OmegaConf.to_yaml(cfg))
 
-        if partitioning == "horizontal":
-            history = horizontal_simulation(cfg)
-        elif partitioning == "vertical":
-            history = vertical_simulation(cfg)
-        else:
-            raise ValueError(
-                f"Unsupported partitioning selected: {partitioning}. Only 'horizontal' and 'vertical' are accepted"
-            )
+        # reimplementation of the simulation in a centralized manner
+        loss_list = []
+        accuracy_list = []
+        model = HarModel(6)
+        # uno in più così da avere anche il round 0 come fa flower
+        loss, accuracy = evaluate_model(model, test_loader, cfg.train_cfg)
+        loss_list.append(loss.item())
+        accuracy_list.append(accuracy)
+        for j in range(cfg.sim_cfg.num_rounds):
+            print(f"Starting round {j+1} of {cfg.sim_cfg.num_rounds}")
+            train(model, train_loaders[0], cfg.train_cfg)
+            loss, accuracy = evaluate_model(model, test_loader, cfg.train_cfg)
+            loss_list.append(loss.item())
+            accuracy_list.append(accuracy)
 
-        loss_list = extract_metric_data(history.metrics_centralized["loss"])
-        accuracy_list = extract_metric_data(history.metrics_centralized["accuracy"])
         histories.append([loss_list, accuracy_list])
 
     print("Dumping histories...")

@@ -20,7 +20,7 @@ train_cfg:
 
 data_cfg:
   num_clients: 100
-  hybrid_ratio: 0.0
+  hybrid_ratio: 1
   hybrid_method: unify
   batch_size: 32
   val_ratio: 0.0
@@ -31,10 +31,9 @@ data_cfg:
   num_classes: 62
 
 hydra:
-  mode: MULTIRUN
+  # mode: MULTIRUN
   sweeper:
     params:
-      data_cfg.hybrid_ratio: 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9
       data_cfg.hybrid_method: unify, share-disjoint
   run:
     dir: .
