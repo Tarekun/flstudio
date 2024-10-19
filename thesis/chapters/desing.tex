@@ -22,7 +22,7 @@ mantenerli volutamente subottimali per poter vedere e apprezzare il
 miglioramento di performance dato dalla maggiore condivisione dei 
 dataset locali. Questo motiva la scelta di modelli di dimensione 
 ridotta, la scelta di mantenere una funzione di attivazione, sì 
-famose ed efficace, ma comunque migliorabile come la ReLU o la scelta 
+famosa ed efficace, ma comunque migliorabile come la ReLU o la scelta 
 della classica Creoss Entropy Loss come funzione di costo, che sono 
 sempre state usate in tutti gli esperimenti presentati.
 
@@ -85,7 +85,7 @@ usata una CNN (Convolutional Neural Network). Il motivo per cui questa
 architettura di rete neurale è così efficace nei problemi di image 
 classification o semantic segmentation è che implementa nativamente 
 un'invarianza rispetto alla posizione relativa che gli oggetti 
-osservati nelle immagini 
+osservati hanno nelle immagini 
 di input. Ad esempio, dato un filtro che delinea il contorno di un 
 viso nella sua feature map, se tale viso viene tralsato di qualche 
 pixel nell'immagine originale, il filtro delineerà un contorno nella 
@@ -135,19 +135,15 @@ in un test set del 30\% del totale e in un training set
 che contiene il 70\% delle feature.
 
 
-\subsection{Reti neurale}
+\subsection{Rete neurale}
 Dato che l'UCI HAR è un dataset i cui sample sono feature vector di 
 diverse misurazioni aggregate senza una particolare struttura, per 
 questo problema è stato usata una semplice MLP (Multi Layer Perceptron).
-Questo dataset è stato trattato sia a partizionamento orizzontale che 
-a verticale e sono stati usati due modelli diversi per i due esperimenti.
-Nel caso del partizionamento orizzontale si è usato un MLP con un solo 
+L'architettura usata è un MLP con un solo 
 layer nascosto da 50 neuroni. In esperimenti preliminari si sono provate 
 diverse dimensioni per questo modello e poi si è provati a ridurlo 
 quanto possibile.
-Nel caso del partizionamento verticale ogni client è stato dotato di un 
-MLP con un layer nascosto per calcolare l'encoding delle feature e il
-sever di un altro MLP con un layer nascosto per compiere la 
-classificazione, per un modello totale che 
-comprende 5 layer in tutto (input, hidden layer dei client, encoding 
-layer, hidden layer del server, output layer).
+
+Il motivo per cui è stata scelta questa semplice architettura è che 
+le feature di questo dataset sono 561 numeri reali calcolati dalle 
+misurazioni originali, senza una particolare struttura su di essi.

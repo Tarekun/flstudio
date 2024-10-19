@@ -37,7 +37,7 @@ di training, mentre sono state eseguite simulazioni fino a 1000 client
 utilizzati. Il numero poi stato mantenuto basso perché in tutti gli 
 esperimenti fatti i risultati ottenuti erano sempre gli stessi, 
 indipendentemente dal numero di client che partecipavano.
-Un'altra risultato interessante è stato l'esperimento utilizzando SGD
+Un altro risultato interessante è stato l'esperimento utilizzando SGD
 senza momentum, in cui si è visto che la CNN non è riuscita a imparare,
 mantenendo un accuracy sul dataset di test intorno al 6\%.
 
@@ -244,7 +244,7 @@ scendendo mai al di sotto del 90\% di accuracy e avvicinandosi al
 figure \ref{fig:hars0sgd} e \ref{fig:hars9sgd} mostrano i risultati 
 ai due estremi di ibridazione.
 Come si può vedere anche in questo caso il modello centralizzato 
-richiede solo 2 round per superare il 50\% di accuracy e termina 
+richiede solo 2 round per superare il 90\% di accuracy e termina 
 l'apprendimento intorno al quinto round. Il modello federato invece
 richiede ben più round di training, superando il 90\% intorno al 
 quindicesimo round e termina con un 91.15\%.
@@ -304,10 +304,10 @@ queste condizioni.
     \end{subfigure}
 \end{figure}
 
-Concludendo quest'analisi, anche in questo si è potuto riscontrare
+Concludendo quest'analisi, anche in questo caso si è potuto riscontrare
 un effettivo miglioramento di performance all'aumentare dell'ibridazione,
 seppur con margini più stretti, in quanto l'accuracy del modello 
-federato è già piuttosto alta. Passando da condivsione nulla ad allenamento
+federato è già piuttosto alta. Passando da condivisione nulla ad allenamento
 centralizzato si ottiene un miglioramento complessivo di circa 5 punti 
 percentuali. Anche in questo caso con una condivisione del 20\% si può 
 ottenere la maggior parte di questo miglioramento e con una condivisione 
@@ -387,7 +387,7 @@ per un qualche iperparametro \alpha < 0.
 \subsubsection{Regolarizzazione}
 In questi esperimenti non si è fatto particolare uso di tecniche di 
 normalizzazione o regolarizzazione, se non per una normalizzazione 
-applicata alla immagini del FEMNIST ottenuta dalle trasformazioni 
+applicata alle immagini del FEMNIST ottenuta dalle trasformazioni 
 built-in fornite da PyTorch. Si potrebbe allora provare alcune di 
 queste tecniche come l'utilizzo della normalizzazione \(L_2\) in caso si 
 usi SGD (\(L_2\) e weight decay sono equivalenti solo sotto SGD 
@@ -418,7 +418,7 @@ strutturalmente un'invarianza desiderata a qualche trasformazione
 dell'input. Un esempio concreto è l'invarianza traslazionale che 
 implementano i layer convoluzionali attraverso la condivisione dei pesi.
 Il geometric deep learning ~\cite{bronstein2021geometric} è lo studio di simmetrie 
-(i.e. invarianti o equivarianti) geometriche che possono essere sfruttate nella 
+(i.e. invarianze o equivarianze) geometriche che possono essere sfruttate nella 
 progettazione di architetture neurali.
 Il FEMNIST è un dataset particolare in cui tutti i caratteri sono stati
 centrati e riscalati per ricoprire tutti la stessa area, cosa che in 

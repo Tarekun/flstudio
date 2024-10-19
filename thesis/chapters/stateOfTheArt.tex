@@ -1,9 +1,9 @@
 \chapter{Stato dell'arte}
-In questa sezione viene introdotto il Federated Learning, come funziona,
+In questa sezione viene introdotto il federated learning, come funziona,
 i diversi possibili approcci, quali sono i vantaggi e gli svantaggi.
-Prima di tutto viene spiegato cos'è il Federated Learning e i diversi tipi
+Prima di tutto viene spiegato cos'è il federated learning e i diversi tipi
 di partizionamento dei dati, mentre nel secondo paragrafo vengono discussi
-gli aspetti positivi di questa tecnica, specie nell'area della privacy dei
+gli aspetti positivi di questa tecnica, specie nell'area della privacy 
 dei dati per contesti ad alta sensibilità. Infine vengono discusse le
 difficoltà che quest'approccio provoca, principalmente la distribuzione non
 IID (Indipendent and Identically Distributed) dei dataset locali.
@@ -27,13 +27,13 @@ modello.
 
 Il Federated Learning si pone di risolvere questo problema allenando il nostro
 modello proprio alla fonte dei dati, dove questi sono già presenti o vengono
-generati. In questo framework possiamo individuare N client ognuno dei quali
+generati. In questo framework possiamo individuare \(K\) client ognuno dei quali
 ha una copia del modello da allenare fornitagli da un server e ognuno dei quali
 con il proprio dataset, disgiunto da quello degli altri client.
-Ad ogni round di apprendimento ognuno degli N client allena il proprio modello 
+Ad ogni round di apprendimento ognuno degli \(K\) client allena il proprio modello 
 con il proprio dataset locale e, finito il passo di apprendimento, invia al
 server il proprio modello aggiornato. A questo punto il server si occuperà 
-semplicemente di fare una qualche aggregazione dei nuovi N modelli che gli sono
+semplicemente di fare una qualche aggregazione dei nuovi \(K\) modelli che gli sono
 stati forniti e redistribuire ai client il nuovo modello prodotto.
 
 In questo studio ci occupiamo di applicare il Federated Learning a 2 reti neurali,
@@ -51,7 +51,7 @@ Uno dei punti fondamentali del federated learning è come sono
 distribuiti i dati tra i vari client. Si possono individuare almeno due 
 categorie di federated learning in base a come sono distribuiti: 
 l'Horizontal Federated Learning (HFL) e il Vertical Federated Learning
-(VFL). In questa sezione vengono presentati i due modelli e poi vengono 
+(VFL). In questa sezione vengono presentati i due modelli e poi viene 
 anche discusso un modello ibrido in cui parte dei dati rimane alla fonte 
 e un'altra parte viene condivisa in un unico dataset globale.
 
@@ -74,7 +74,7 @@ Nel partizionamento verticale VFL, conosciuto anche come feature-based
 federated learning, ogni client utilizza un insieme 
 di feature diverse da quelle degli altri, con un qualche collegamento 
 tra i sample. Un primo studio che ha introdotto il VFL in modo distinto
-da quello orizzontale è yang et al. ~\cite{yang2019vfl}.
+da quello orizzontale è Yang et al. ~\cite{yang2019vfl}.
 In questo caso i dati non vengono da una 
 fonte comune istanziata più volte (come la stessa applicazione che 
 produce gli stessi dati usata da utenti diversi), ma fonti diverse,
@@ -98,7 +98,7 @@ quello dello scambio degli embeddings in modo sicuro senza che da
 questi si riesca a risalire alle feature originali, invertendo
 l'operazione di embedding. Questo tipo di problemi in genere può 
 essere risolto facendo uso di Differential Privacy (DF) e/o di 
-homomorphic encryption; alcuni studio che discutono questi problemi e
+homomorphic encryption; alcuni studi che discutono questi problemi e
 come risolverli sono Wei et al. ~\cite{wei2022vflChallenge} e 
 ~\cite{liu2022vflChallenge}
 
@@ -148,10 +148,11 @@ dei modelli dei client. In questa sezione viene prima di tutto introdotta
 la \textit{FedAvg} la prima e più famosa strategia. Notati i problemi 
 di questa strategia, vengono poi discusse altre strategie presenti 
 nella letteratura che puntano a migliorarne i punti deboli, come 
+\textit{FedProx} e \textit{SCAFFOLD}.
 
 \subsection{FedAvg}
 La strategia più conosciuta ed usata è la \textit{FedAvg} (Federated
-Averagin), introdotta in McMahan et al. ~\cite{McMahan2016CommunicationEfficientLO},
+Averaging), introdotta in McMahan et al. ~\cite{McMahan2016CommunicationEfficientLO},
 paper che introduce per la prima volta il federated learning. Nel 
 \textit{FedAvg} il server aggrega i nuovi parametri calcolando una 
 media pesata di tutti quelli ricevuti, dove il peso dato ad ogni modello
@@ -196,7 +197,7 @@ sulle performance del modello globale, facendo si che i modelli locali
 non possano allontanarsi eccessivamente da quello globale, permette 
 anche un maggiore grado di eterogeneità delle prestazioni computazionali 
 dei client. Se con la \texit{FedAvg}, infatti, client che compiono 
-molte epoche di apprendimento velocemente rischiano ritrovarsi con un 
+molte epoche di apprendimento velocemente rischiano di ritrovarsi con un 
 modello significativamente diverso da uno di un client che ha compiuto
 pochi cicli di allenamento, forzando quindi round di sincronizzazione
 che hanno l'effetto di far andare l'intera rete alla velocità del più
@@ -251,7 +252,7 @@ repository centralizzata, potendo quindi preservare la privacy degli
 utenti che generano tali dati, eliminando la necessità di 
 un'infrastruttura di database o datawarehouse per l'ente che gestisce
 il modello ed eliminando il carico sulla rete per trasmettere tali
-dati, fattori che possono diventare significativi se se il learning è
+dati, fattori che possono diventare significativi se il learning è
 fatto su larga scala come ad esempio sulla miriade di dispositivi IoT.
 
 \subsubsection{Problemi}
@@ -260,11 +261,11 @@ difficoltà.
 In primis, c'è il fatto che dato che i dati locali sono tipicamente 
 eterogenei e dotati di bias. In particolare non sono IID (Independent
 and identically distributed), condizione spesso richiesta nel 
-machine learning. Il risultato è che ogni client quando allena modello 
+machine learning. Il risultato è che ogni client quando allena il modello 
 gli insegna lo stesso bias presente nel suo dataset. Particolarmente
 significativo è lo sbilanciamento delle classi in problemi di 
 classificazione ~\cite{zhao2018flniid} ~\cite{xiao2021flci}.
-Inoltre, pur non necessitando di dover inviare dati in ad al server è
+Inoltre, pur non necessitando di dover inviare dati al server è
 ancora necessario inviargli i modelli aggiornati nel caso del 
 partizionamento orizzontale o l'embedding delle feature nel caso 
 verticale. Se i round di comunicazione tra client e server sono 

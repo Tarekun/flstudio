@@ -22,7 +22,7 @@ sample dei dataset dei client in un unico dataset centralizzato.
 \subsection{PyTorch}
 PyTorch ~\cite{pytorch} è una libreria open-source estremamente popolare e flessibile 
 per programmare ed allenare modelli di Deep Learning.
-Siluppata inizialmente dal FAIR lab (originariamente Facebook's AI
+Sviluppata inizialmente dal FAIR lab (originariamente Facebook's AI
 Reasearch, oggi Foundational AIR), offre
 un'API dichiarativa in python per costruire architetture di reti 
 neurali, lasciando totale controllo al programmatore sul passo di 
@@ -62,21 +62,6 @@ FedAvg. Questo ciclo  di allenamento e aggregazione
 costituisce un round ed ogni simulazione 
 è durata 20 round.
 
-Va notato che Flower è un framework pensato principalmente per il 
-federated learning orizzontale e non ha un supporto nativo per 
-contesti a partizionamento verticale. La soluzione, suggerita dallo 
-stesso team di Flower ~\cite{flower_vfl}, è quella di riutilizzare 
-il meccanismo di scambio di parametri da client a server per passare
-invece l'encoding delle feature calcolato dal modello locale. 
-L'effetto collaterale di questo sistema è che l'intero feed forward 
-delle feature, nei modelli locali dei client ad encodings e poi 
-nel modello del server da encoding a classificazione, richiede l'intero 
-round di training. Questo implica che ogni round può eseguire una sola
-epoca di training per round, cosa che può essere aggirata moltiplicando
-il numero di round per il numero di epoche desiderate, e che si è
-costretti ad un regime di full-batch training, a meno di non voler 
-implementare una gestione delle batches dei dataset in funzione del 
-round.
 
 \subsection{Hydra}
 Hydra ~\cite{hydra} è una libreria potente e flessibile per configurare 
@@ -146,7 +131,7 @@ Tutti gli argomenti di questa funzione sono controllabili tramite la
 configurazione Hydra usata per eseguire lo script. Si noti come
 l'implementazione supporti anche un test di validazione per una 
 possibile implementazione di early-stopping. I dataset di validazione 
-sono però stati ignorati nel corso degli esperimenti e questa feature 
+sono però stati ignorati nel corso degli esperimenti finali e questa feature 
 è rimasta da esperimenti preliminari.
 
 \subsubsection{HAR}
@@ -224,15 +209,15 @@ dataset originale è già partizionato per client, in questo caso c'è
 bisogno di (i) aprire 3 file diversi \texttt{subject\_\{variant\}.txt}, 
 \texttt{X\_\{variant\}.txt} e \texttt{y\_\{variant\}.txt} e riassociare 
 i dati tra loro e (ii) instanziare i \texttt{Dataset} di PyTorch.
-La funzione \texttt{\_load\_har\_dataset} si occupa di fare la prima tasks,
+La funzione \texttt{\_load\_har\_dataset} si occupa di fare la prima task,
 mentre \texttt{\_get\_har\_datasets} si occupa di istanziare correttamente le classi 
-\texttt{Dataset}. Si noti che i dataset locali sono partrizionati per 
+\texttt{Dataset}. Si noti che i dataset locali sono partizionati per 
 utente, mentre il dataset di test è un unico dataset con sample di 
 tutti gli utenti.
 
 
 \subsection{I modelli}
-Per tutti e 3 gli esperimenti condotti sono stati utilizzati modelli 
+Per entrambi gli esperimenti condotti sono stati utilizzati modelli 
 diversi.
 
 \subsubsection{FEMNIST - CNN}
@@ -281,7 +266,7 @@ class CnnEmnist(nn.Module):
 \end{lstlisting}
 
 
-\subsubsection{HAR HFL - MLP}
+\subsubsection{HAR - MLP}
 Il modello utilizzato per l'UCI HAR a partizionamento orizzontale 
 è una semplice rete neurale composta di soli layer fully connected 
 con un solo hidden layer. Ha un input per le 561 feature, un output 
@@ -311,78 +296,7 @@ class HarModel(nn.Module):
 \end{lstlisting}
 
 
-\subsubsection{HAR VFL - MLP distribuito}
-In ultimo è stato anche provato un modello a partizionamento verticale 
-delle feature dell'UCI HAR. In questo contesto, dati \(K\) client,
-ogni modello di un client prende \(561/K\) feature e calcola un encoding 
-di queste in un vettore dimensione \(d\). Le dimensioni del vettore 
-provate sono state \(d=10\) e \(d=100\). Calcolati gli encodings, 
-il server raccoglie \(K\) di questi encodings in unico vettore di lunghezza
-\(Kd\). Questo vettore di encodings viene poi passato ad un ultima rete 
-neurale fully connected con un layer nascosto di 50 neuroni e 
-l'output è di nuovo un vettore di dimensione 6 per le 6 attività. Il 
-modello dei client è stato implementato con il codice seguente:
-
-\begin{lstlisting}
-class ClientVerticalModel(nn.Module):
-    def __init__(self, num_features: int):
-        super(ClientVerticalModel, self).__init__()
-        self.input = nn.Linear(num_features, 50)
-        self.latent = nn.Linear(50, latent_vector_length)
-
-    def forward(self, x):
-        x = F.relu(self.input(x))
-        latent = F.relu(self.latent(x))
-        return latent
-\end{lstlisting}
-
-Mentre il codice per la rete del server che raccoglie gli encodings e 
-calcola la classificazione dell'input è:
-
-\begin{lstlisting}
-class ServerVerticalModel(nn.Module):
-    def __init__(self, num_clients, num_classes: int):
-        super(ServerVerticalModel, self).__init__()
-        self.input = nn.Linear(num_clients * latent_vector_length, 50)
-        self.output = nn.Linear(50, num_classes)
-
-    def forward(self, x):
-        x = F.relu(self.input(x))
-        out = F.log_softmax(self.output(x), dim=1)
-        return out
-\end{lstlisting}
-
-Per comodità in fase di testing del modello è stato anche implementata 
-una versione unica del modello, in grado di prendere le 561 feature e 
-calcolare la classificazione direttamente, facendo uso dei modelli 
-client e del modello server passati nel costruttore. Dato che può 
-facilitare a comprendere meglio il funzionamento del VFL di seguito è
-riportato anche il codice di questo modello:
-
-\begin{lstlisting}
-class FullVerticalModel(nn.Module):
-    def __init__(
-        self,
-        client_models: list[ClientVerticalModel],
-        server_model: ServerVerticalModel,
-        num_clients: int,
-    ):
-        super(FullVerticalModel, self).__init__()
-        self.client_models = client_models
-        self.server_model = server_model
-        self.num_clients = num_clients
-
-    def forward(self, x):
-        embeddings = []
-        for cid, model in enumerate(self.client_models):
-            extracted_features = extract_features(x, self.num_clients, cid)
-            embeddings.append(model(extracted_features))
-
-        embeddings_aggregated = torch.cat(embeddings, dim=1)
-        return self.server_model(embeddings_aggregated)
-\end{lstlisting}
-
-
+\subsubsection{Training}
 Ognuno di questi modelli è stato allenato con Cross Entropy Loss
 come loss function e con due diversi algoritmi di 
 ottimizzazione.
@@ -391,7 +305,7 @@ Descent) con learning rate di 0.01 e momentum di 0.9. Esperimenti
 preliminari hanno provato altri valori come un learning rate più basso
 come 0.001 o più grande come 0.1 o la rimozione del momentum, ma le 
 performance migliori sono state ottenute con i valori indicati 
-precedentemente; la CNN per il FEMNIST non riusce nemmeno a convergere 
+precedentemente; la CNN per il FEMNIST non riesce nemmeno a convergere 
 senza momentum e l'accuracy sul test dataset si ferma intorno al 6\%.
 L'altro algoritmo usato è stato l'AdamW ~\cite{Loshchilov2017AdamW}, 
 ovvero l'algoritmo Adam (Adaptive Movement Estimation) con weight 
